@@ -1,14 +1,10 @@
 """Executes the trading strategies and analyzes the results.
 """
 
-import math
-from datetime import datetime
-
 import structlog
-import pandas
-from talib import abstract
 
-from analyzers.indicators import *
+from app.analyzers.indicators import ichimoku, macd, rsi, momentum, mfi, adx, plus_di, minus_di, stoch_rsi, obv, kdj, td
+
 from analyzers.informants import *
 from analyzers import *
 
