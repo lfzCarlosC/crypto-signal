@@ -438,7 +438,7 @@ class Behaviour():
 
     def isBottom2B(self, volume, opened, close):
         # -- price
-        priceMatches2BPattern = (opened[-2] > close[-2]) and (opened[-2] > opened[-3]) and (close[-2] < close[-3])
+        priceMatches2BPattern = (opened[-2] < close[-2]) and (opened[-2] <= opened[-3]) and (close[-2] > close[-3])
         # -- volume
         volumeMatches2BPattern = (volume[-3] < volume[-2])
         # --indicator
