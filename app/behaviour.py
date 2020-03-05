@@ -40,6 +40,8 @@ class Behaviour():
         self.strategy_analyzer = StrategyAnalyzer()
         self.notifier = notifier
 
+        self.indicator_dispatcher = self.strategy_analyzer.indicator_dispatcher()
+        self.informant_dispatcher = self.strategy_analyzer.informant_dispatcher()
         output_interface = Output()
         self.output = output_interface.dispatcher
 
@@ -131,12 +133,12 @@ class Behaviour():
                     macd_signal = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdsignal'];
                     delta_macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdhist'];
 
-                    rsi = new_result[exchange][market_pair]['indicators']['rsi'][0]['result']['rsi'];
-                    stoch_slow_k = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_k'];
-                    stoch_slow_d = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_d'];
-                    kt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['k'];
-                    dt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['d'];
-                    jt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['j'];
+                    # rsi = new_result[exchange][market_pair]['indicators']['rsi'][0]['result']['rsi'];
+                    # stoch_slow_k = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_k'];
+                    # stoch_slow_d = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_d'];
+                    # kt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['k'];
+                    # dt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['d'];
+                    # jt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['j'];
 
                     ######################################### ema indicator
                     #now contains: ema7IsOverEma65 ema7IsOverEma22 ema7IsOverEma33
@@ -260,19 +262,19 @@ class Behaviour():
                     # detectMacdVolumeIsShrinked = self.detectMacdVolumeShrinked(delta_macd, self.detectFirstMacdPositiveSlotPosition(delta_macd))
 
                     ########################################### stochrsi
-                    len_sd = len(stoch_slow_d)
-                    len_sk = len(stoch_slow_k)
-                    stochrsi_goldenfork = (
-                        (stoch_slow_d[len_sd-2] >= stoch_slow_k[len_sk-2])
-                        and
-                        (stoch_slow_d[len_sd-1] <= stoch_slow_k[len_sk-1])
-                    )
-
-                    stochrsi_deadfork = (
-                        (stoch_slow_d[len_sd - 2] <= stoch_slow_k[len_sk - 2])
-                        and
-                        (stoch_slow_d[len_sd - 1] >= stoch_slow_k[len_sk - 1])
-                    )
+                    # len_sd = len(stoch_slow_d)
+                    # len_sk = len(stoch_slow_k)
+                    # stochrsi_goldenfork = (
+                    #     (stoch_slow_d[len_sd-2] >= stoch_slow_k[len_sk-2])
+                    #     and
+                    #     (stoch_slow_d[len_sd-1] <= stoch_slow_k[len_sk-1])
+                    # )
+                    #
+                    # stochrsi_deadfork = (
+                    #     (stoch_slow_d[len_sd - 2] <= stoch_slow_k[len_sk - 2])
+                    #     and
+                    #     (stoch_slow_d[len_sd - 1] >= stoch_slow_k[len_sk - 1])
+                    # )
 
                     ########################################## volume is 3 times greater than before
                     # len_volume = len(volume)
@@ -395,8 +397,8 @@ class Behaviour():
                         if (macdBottomDivergence and lastNDMIIsPositiveFork):
                             self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
 
-                        if (macdBottomDivergence and stochrsi_goldenfork):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + stochrsi强弱指标金叉", indicatorTypeCoinMap)
+                        # if (macdBottomDivergence and stochrsi_goldenfork):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + stochrsi强弱指标金叉", indicatorTypeCoinMap)
 
                         # if (goldenForkKdj and goldenForkMacd):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + macd金叉信号", indicatorTypeCoinMap)
@@ -763,15 +765,15 @@ class Behaviour():
             list: A list of dictinaries containing the results of the analysis.
         """
 
-        indicator_dispatcher = self.strategy_analyzer.indicator_dispatcher()
         results = { indicator: list() for indicator in self.indicator_conf.keys() }
         historical_data_cache = dict()
 
-        for indicator in self.indicator_conf:
-            if indicator not in indicator_dispatcher:
-                self.logger.warn("No such indicator %s, skipping.", indicator)
-                continue
+        # for indicator in self.indicator_conf:
+        #     if indicator not in self.indicator_dispatcher:
+        #         self.logger.warn("No such indicator %s, skipping.", indicator)
+        #         continue
 
+        for indicator in self.indicator_dispatcher:
             for indicator_conf in self.indicator_conf[indicator]:
                 if indicator_conf['enabled']:
                     candle_period = indicator_conf['candle_period']
@@ -799,7 +801,7 @@ class Behaviour():
 
                     results[indicator].append({
                         'result': self._get_analysis_result(
-                            indicator_dispatcher,
+                            self.indicator_dispatcher,
                             indicator,
                             analysis_args,
                             market_pair
@@ -820,14 +822,14 @@ class Behaviour():
             list: A list of dictinaries containing the results of the analysis.
         """
 
-        informant_dispatcher = self.strategy_analyzer.informant_dispatcher()
         results = { informant: list() for informant in self.informant_conf.keys() }
         historical_data_cache = dict()
 
-        for informant in self.informant_conf:
-            if informant not in informant_dispatcher:
-                self.logger.warn("No such informant %s, skipping.", informant)
-                continue
+        # for informant in self.informant_conf:
+        #     if informant not in self.informant_dispatcher:
+        #         self.logger.warn("No such informant %s, skipping.", informant)
+        #         continue
+        for informant in self.informant_dispatcher:
 
             for informant_conf in self.informant_conf[informant]:
                 if informant_conf['enabled']:
@@ -853,7 +855,7 @@ class Behaviour():
                    
                     results[informant].append({
                         'result': self._get_analysis_result(
-                            informant_dispatcher,
+                            self.informant_dispatcher,
                             informant,
                             analysis_args,
                             market_pair
