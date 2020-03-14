@@ -99,6 +99,9 @@ class Behaviour():
 
             for market_pair in market_data[exchange]:
 
+                if (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")):
+                    continue;
+
                 if market_pair not in new_result[exchange]:
                     new_result[exchange][market_pair] = dict()
 
@@ -351,10 +354,10 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 13位置", indicatorTypeCoinMap)
 
                         if (td9PositiveFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 9位置", indicatorTypeCoinMap)
+                            self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 9位置", indicatorTypeCoinMap)
 
                         if (td13PositiveFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 13位置", indicatorTypeCoinMap)
+                            self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 13位置", indicatorTypeCoinMap)
 
                         if (td13NegativeFlag42B or td9NegativeFlag42B):
                             if (self.isBottom2B(volume, opened, close)):

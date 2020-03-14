@@ -303,7 +303,7 @@ class Notifier():
         message_template = Template(template)
         new_message = str()
         
-        #extractCoins.matchCoinPairsToUsdt(sys.argv[2]);
+        # extractCoins.matchCoinPairsToUsdt(sys.argv[2]);
         file = open(sys.argv[2], mode='r')
         text = file.read()
         (exchange, period, type) = self.convertTitle();
