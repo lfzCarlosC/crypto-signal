@@ -132,9 +132,9 @@ class Behaviour():
                     plus_di = new_result[exchange][market_pair]['indicators']['plus_di'][0]['result']['plus_di'] ;
                     minus_di = new_result[exchange][market_pair]['indicators']['minus_di'][0]['result']['minus_di'] ;
                     delta_di = plus_di - minus_di
-                    macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macd'];
-                    macd_signal = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdsignal'];
-                    delta_macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdhist'];
+                    macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macd'];  #white line
+                    macd_signal = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdsignal']; #yellow line
+                    delta_macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdhist']; #macd volume
 
                     # rsi = new_result[exchange][market_pair]['indicators']['rsi'][0]['result']['rsi'];
                     # stoch_slow_k = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_k'];
@@ -234,19 +234,13 @@ class Behaviour():
 
                     ############################################# dmi
                     lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
-
                     lastNDMIIsPositiveFork = (self.lastNDMIIsPositive(delta_di, 1) or self.lastNDMIIsPositive(delta_di, 2) or self.lastNDMIIsPositive(delta_di, 3))
 
                     ############################################# macdBottomDivergence
-                    #input: data
-                    #output: boolean
-                    #detectBottomDivergence(detectMacdNegativeSlots(data))
-                    macdBottomDivergence = self.detectBottomDivergence(delta_macd, low, self.detectLastMacdNegativeSlots(delta_macd))
-
-                    macdBottomDivergenceIsPositiveMacd = self.detectBottomDivergenceIsPositiveMacd(delta_macd, low, self.detectLastMacdNegativeSlots(delta_macd))
-
-                    macdIsDecreased = (delta_macd[len(delta_macd)-1] < 0  and delta_macd[len(delta_macd)-2] < 0
-                                       and delta_macd[len(delta_macd)-1] > delta_macd[len(delta_macd)-2])
+                    hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
+                    hasPeakDivergence = self.detectPeakDivergence(delta_macd, high, macd_signal)
+                    hasMultipleBottomDivergence = self.detectMultipleBottomDivergence(delta_macd, low, macd_signal)
+                    hasMultiplePeakDivergnce = self.detectMultiplePeakDivergence(delta_macd, high, macd_signal)
 
                     ############################################# bollCross
                     # bollCross = False
@@ -381,24 +375,25 @@ class Behaviour():
                         # if (candleIsOverEma):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "k线上穿33日ema线", indicatorTypeCoinMap)
 
-                        if (flatPositive):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd正值平滑", indicatorTypeCoinMap)
+                        # if (flatPositive):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd正值平滑", indicatorTypeCoinMap)
 
+                        (start, end) = self.detectMacdSlots(delta_macd, 0, 'positive')
                         if (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[
-                            self.getIndexOfMacdValley(delta_macd, self.detectLastMacdNegativeSlots(delta_macd))])):
+                            self.getIndexOfMacdValley(delta_macd, start, end)])):
                             self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
                                              indicatorTypeCoinMap)
 
                         # if (lastNDMIIsPositiveFork and goldenForkMacd):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
                         #                      indicatorTypeCoinMap)
-                        #
+
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
 
 
-                        if (macdBottomDivergence and lastNDMIIsPositiveFork):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
+                        # if (macdBottomDivergence and lastNDMIIsPositiveFork):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
 
                         # if (macdBottomDivergence and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + stochrsi强弱指标金叉", indicatorTypeCoinMap)
@@ -413,12 +408,21 @@ class Behaviour():
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + DMI", indicatorTypeCoinMap)
 
                         # compound indicator
-                        # if (macdBottomDivergenceIsPositiveMacd):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离最低点为macd正值:强烈信号", indicatorTypeCoinMap)
-                        #
+                        if (hasBottomDivergence):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "段内底背离", indicatorTypeCoinMap)
+
+                        if (hasPeakDivergence):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "段内顶背离", indicatorTypeCoinMap)
+
+                        if (hasMultipleBottomDivergence):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空底背离", indicatorTypeCoinMap)
+
+                        if (hasMultiplePeakDivergnce):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空顶背离", indicatorTypeCoinMap)
+
                         # if (stochrsi_goldenfork and goldenForkKdj and lastNDMIIsPositiveVolume and (delta_macd[len(delta_macd)-1] > delta_macd[len(delta_macd)-2])):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + kdj金叉信号 + DMI+ + macd量能减小", indicatorTypeCoinMap)
-                        #
+
                         # if (stochrsi_goldenfork and macdIsDecreased):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd下跌量能减弱",
                         #                      indicatorTypeCoinMap)
@@ -545,17 +549,7 @@ class Behaviour():
                 return False;
         return True;
 
-###############################################################
-    #Test: a=[1,2,3,4,5,6,-1,-2]
-    def detectLastMacdNegativeSlots(self, macd):
-        flag = False;
-        for i in range(len(macd)-1, -1, -1):
-            if (macd[i] > 0):
-                if(flag == True):
-                    return i+1;
-            elif (flag == False):
-                flag = True;
-
+######################## main strategy #######################################
     def detectFirstMacdPositiveSlotPosition(self, macd):
         flag = False;
         for i in range(len(macd)-1, -1, -1):
@@ -570,28 +564,6 @@ class Behaviour():
             elif (flag == True) :
                 return i;
 
-    def getIndexOfMacdPeak(self, macd, start):
-        index = start
-        maxIndex = start
-        max = macd[start]
-        for value in macd[start:]:
-            if (max < value):
-                max = value;
-                maxIndex = index
-            index = index + 1
-        return maxIndex
-
-    def getIndexOfMacdValley(self, macd, start):
-        index = start
-        minIndex = start
-        min = macd[start]
-        for value in macd[start:]:
-            if(min > value):
-                min = value;
-                minIndex = index
-            index = index + 1
-        return minIndex
-
     def detectMacdVolumeShrinked(self, macd, start):
         maxIndex = self.getIndexOfMacdPeak(macd, start)
         max = macd[(maxIndex-len(macd))]
@@ -602,6 +574,7 @@ class Behaviour():
             loc = loc + 1
         return False;
 
+    #deprecated
     def detectBottomDivergenceIsPositiveMacd(self, macd, data, start):
         minIndex = self.getIndexOfMacdValley(macd, start)
         min = data[(minIndex-len(macd))]
@@ -613,16 +586,106 @@ class Behaviour():
             loc = loc + 1
         return False;
 
-    def detectBottomDivergence(self, macd, data, start):
-        minIndex = self.getIndexOfMacdValley(macd, start)
-        min = data[(minIndex-len(macd))]
-        loc = minIndex
-        for index, value in enumerate(data[(minIndex-len(macd)):]):
-            if(value < min):
-                  return True;
-            loc = loc + 1
-        return False;
+    #段内底背离
+    #macd=[1, 3, -3, -4, -1, -3, -1]
+    #data=[10, 9, 8, 7, 8, 5, 8]
+    def detectBottomDivergence(self, delta_macd, data, macd_signal):
+        delta_len = (len(data) - len(macd_signal))
+        (start, end) = self.detectMacdSlots(delta_macd, 0, "negative")
+        min = self.getIndexOfMacdValley(delta_macd, start, end)
+        for i in range(min, end, 1):
+            if(0 > delta_macd[i] > delta_macd[min]) and (data[i + delta_len] < data[min + delta_len]) \
+                    and (macd_signal[i] < 0 and macd_signal[min] < 0):
+                return True;
+        return False
 
+    #段内顶背离
+    def detectPeakDivergence(self, delta_macd, data, macd_signal):
+        delta_len = (len(data) - len(macd_signal))
+        (start, end) = self.detectMacdSlots(delta_macd, 0, "positive")
+        maxx = self.getIndexOfMacdPeak(delta_macd, start, end)
+        for i in range(maxx, end, 1):
+            if(0 < delta_macd[i] < delta_macd[maxx]) and (data[i + delta_len] > data[maxx + delta_len]) \
+                    and (macd_signal[i] > 0 and macd_signal[maxx] > 0):
+                return True;
+        return False
+
+    #分立跳空底背离
+    def detectMultipleBottomDivergence(self, delta_macd, data, macd_signal):
+        delta_len = (len(data) - len(macd_signal))
+        (start1, end1) = self.detectMacdSlots(delta_macd, 0, "negative")
+        (start2, end2) = self.detectMacdSlots(delta_macd, 1, "negative")
+        min1 = self.getIndexOfMacdValley(delta_macd, start1, end1)
+        min2 = self.getIndexOfMacdValley(delta_macd, start2, end2)
+        if (delta_macd[min2] < delta_macd[min1] < 0) \
+                and (data[min2 + delta_len] > data[min1 + delta_len]) \
+                and (macd_signal[min2] < 0 and macd_signal[min1] < 0):
+            return True;
+        else:
+            return False;
+
+    #分立跳空顶背离
+    def detectMultiplePeakDivergence(self, delta_macd, data, macd_signal):
+        delta_len = (len(data) - len(macd_signal))
+        (start1, end1) = self.detectMacdSlots(delta_macd, 0, "positive")
+        (start2, end2) = self.detectMacdSlots(delta_macd, 1, "positive")
+        max1 = self.getIndexOfMacdPeak(delta_macd, start1, end1)
+        max2 = self.getIndexOfMacdPeak(delta_macd, start2, end2)
+        if (delta_macd[max2] > delta_macd[max1] > 0) \
+                and (data[max2 + delta_len] < data[max1 + delta_len]) \
+                and (macd_signal[max1] > 0 and macd_signal[max2] > 0):
+            return True;
+        else:
+            return False;
+
+    def detectMacdSlots(self, macd, times, direction):
+        start = len(macd)-1
+        initialPoint = start
+        directionIsPositive = (direction == 'positive');
+        if (macd[start] > 0) ^ directionIsPositive:
+            return (-1, -1)
+        start = self.walksOneSlotLength(macd, start);
+        if(times == 0):
+            return (start+1, initialPoint)
+        for i in range(start, -1, -1):
+            i = self.walksOneSlotLength(macd, i);
+            slotStart = i
+            i = self.walksOneSlotLength(macd, i);
+            times = times - 1;
+            if (times == 0):
+                return (i+1, slotStart)
+
+    def walksOneSlotLength(self, slot, start):
+        isPositive = (slot[start] > 0);
+        for i in range(start, -1, -1):
+            if (not (isPositive^(slot[i] <= 0))):
+                return i;
+        return -1;
+
+
+    #Test: a=[1,2,3,4,5,6,-1,-2]
+    def detectLastMacdNegativeSlots(self, macd):
+        flag = False;
+        for i in range(len(macd)-1, -1, -1):
+            if (macd[i] > 0):
+                if(flag == True):
+                    return i+1;
+            elif (flag == False):
+                flag = True;
+
+    def getIndexOfMacdPeak(self, macd, start, end):
+        maxx = start
+        for i in range(start, end):
+            if(macd[i] > macd[maxx]):
+                maxx = i;
+        return maxx;
+
+    def getIndexOfMacdValley(self, macd, start, end):
+        min = start
+        for i in range(start, end):
+            if(macd[i] < macd[min]):
+                min = i;
+        return min;
  ################################################################
 
     def isTheIntersectionPointCloseToBePositive(self, macd, macd_signal, n, intersectionValueAndMin):
