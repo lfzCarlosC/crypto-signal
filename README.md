@@ -1,4 +1,4 @@
-# Cryptal Ark
+# Cryptal Ark v2.0
 
 ![Image description](https://thecryptotribune.com/wp-content/uploads/2019/07/17646/trump-trade-adviser-says-two-catalysts-could-send-the-dow-to-30000-1000x438.jpg)
 
@@ -12,7 +12,7 @@ Technical Analysis Automated:
 * Ichimoku Cloud (Leading Span A, Leading Span B, Conversion Line, Base Line)
 * Simple Moving Average
 * Exponential Moving Average
-* MACD
+* MACD(Divergence)  
 * MFI
 * OBV
 * VWAP
