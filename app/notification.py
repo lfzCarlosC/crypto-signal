@@ -182,12 +182,12 @@ class Notifier():
                 new_analysis,
                 self.notifier_config['gmail']['optional']['template']
             )
+            message = message.strip()
 
             indicatorModes = sys.argv[3]
-            if message.strip():
+            if message != "":
                 if(indicatorModes == 'easy'):
                     self.dingtalk(message, self.webhook)
-
                 self.gmail_client.notify(message)
 
     def dingtalk(self, msg, webhook):
@@ -306,6 +306,9 @@ class Notifier():
         # extractCoins.matchCoinPairsToUsdt(sys.argv[2]);
         file = open(sys.argv[2], mode='r')
         text = file.read()
+        if text == "":
+            return ""
+
         (exchange, period, type) = self.convertTitle();
         title = 'Subject: 侦测到信号： '+ exchange + "  " + period + "    " + type + '\n\n'
         new_message = new_message + title
