@@ -211,4 +211,4 @@ settings:
   log_mode: text
   market_pairs: [BTC/USDT,ETH/USDT,BCH/USDT]
   output_mode: cli
-  update_interval: 1800
+  update_interval: 900
