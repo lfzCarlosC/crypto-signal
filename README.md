@@ -1,4 +1,4 @@
-# Cryptal Ark (v2.0 König)
+# Cryptal Ark v2.0(König)
 
 ![Image description](https://salmanaslampr.files.wordpress.com/2013/07/erwin-konig.jpg)
 
