@@ -21,6 +21,20 @@ import sys
 class Behaviour():
     """Default analyzer which gives users basic trading information.
     """
+    trendColor = {
+        "分立跳空顶背离":"red",
+        "分立跳空底背离": "green",
+        "段内顶背离": "red",
+        "段内底背离": "green",
+        "接近0轴的macd金叉信号": "green",
+        "TD 底部 9位置": "green",
+        "TD 底部 13位置": "green",
+        "TTD 顶部 9位置": "red",
+        "TTD 顶部 13位置": "red",
+        "MACD 量能上涨异常": "green",
+        "macd金叉信号": "green",
+        "0轴上macd金叉信号": "green",
+    }
 
     def __init__(self, config, exchange_interface, notifier):
         """Initializes DefaultBehaviour class.
@@ -435,9 +449,9 @@ class Behaviour():
 
         #write everything to the email
         for indicator in indicatorTypeCoinMap:
-            f.write(indicator + "\n");
+            f.write("<p style='color: " + Behaviour.trendColor[indicator] +"; font-size:30px;'> <b>" + indicator + "</b></p>\n");
             for coin in indicatorTypeCoinMap[indicator]:
-                f.write("    币种/交易对:" + coin.replace('/','') + '\n' );
+                f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" +  coin.replace('/','') + " " + indicator + '</p>\n' );
         f.close();
         
         # Print an empty line when complete
