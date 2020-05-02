@@ -2,6 +2,8 @@
 """
 
 import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import structlog
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
@@ -29,7 +31,7 @@ class GmailNotifier(NotifierUtils):
 
 
     @retry(stop=stop_after_attempt(3))
-    def notify(self, message):
+    def notify(self, message, title):
         """Sends the message.
 
         Args:
@@ -38,16 +40,19 @@ class GmailNotifier(NotifierUtils):
         Returns:
             dict: A dictionary containing the result of the attempt to send the email.
         """
-        header = 'From: %s\n' % self.username
-        header += 'To: %s\n' % self.destination_addresses
-        header += 'Content-Type: text/plain\n'
-        message = header + message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = title
+        msg['From'] = 'From: %s\n' % self.username
+        msg['To'] = 'To: %s\n' % self.destination_addresses
+
+        part1 = MIMEText(message, 'html')
+        msg.attach(part1)
 
         smtp_handler = smtplib.SMTP(self.smtp_server)
         smtp_handler.ehlo()
         smtp_handler.starttls()
         smtp_handler.login(self.username, self.password)
         addressList = self.destination_addresses.split(",")   
-        result = smtp_handler.sendmail(self.username, addressList, message.encode("utf-8"))
+        result = smtp_handler.sendmail(self.username, addressList, msg.as_string().encode("utf-8"))
         smtp_handler.quit()
         return result

@@ -178,7 +178,7 @@ class Notifier():
             new_analysis (dict): The new_analysis to send.
         """
         if self.gmail_configured:
-            message = self._indicator_message_templater(
+            (message, title) = self._indicator_message_templater(
                 new_analysis,
                 self.notifier_config['gmail']['optional']['template']
             )
@@ -188,7 +188,7 @@ class Notifier():
             if message != "":
                 if(indicatorModes == 'easy'):
                     self.dingtalk(message, self.webhook)
-                self.gmail_client.notify(message)
+                self.gmail_client.notify(message, title)
 
     def dingtalk(self, msg, webhook):
         headers = {'Content-Type': 'application/json; charset=utf-8'}
@@ -310,15 +310,14 @@ class Notifier():
             return ""
 
         (exchange, period, type) = self.convertTitle();
-        title = 'Subject: 侦测到信号： '+ exchange + "  " + period + "    " + type + '\n\n'
-        new_message = new_message + title
-        new_message = new_message + self.getLocalizeTime() + "\n"
-        
+        title = '信号： '+ exchange + "  " + period + "    " + type + '\n\n'
+        new_message = new_message + "<html><head></head><body>"
+        # new_message = new_message + self.getLocalizeTime() + "\n"
         new_message = new_message + text
-        
-        new_message = new_message + "\n本分析结果只涉及买涨信号, 由于投资理念各异不涉及买跌信号, 仅供分析参考 :-> \n"
+        new_message = new_message + "</body> </html>"
+
         file.close()
-        
+
         for exchange in new_analysis:
             for market in new_analysis[exchange]:
                 for indicator_type in new_analysis[exchange][market]:
@@ -348,7 +347,7 @@ class Notifier():
                                         values[signal] = analysis['result'].iloc[-1][signal]
                                         if isinstance(values[signal], float):
                                             values[signal] = format(values[signal], '.8f')
-                                            
+
                             elif indicator_type == 'crossovers':
                                 latest_result = analysis['result'].iloc[-1]
 
@@ -409,4 +408,4 @@ class Notifier():
                                     )
         # Merge changes from new analysis into last analysis
         self.last_analysis = {**self.last_analysis, **new_analysis}
-        return new_message
+        return new_message, title
