@@ -209,6 +209,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [BTC/USDT,ETH/USDT,BCH/USDT]
+  market_pairs: [BTC/USDT,ETH/USDT,LTC/USDT,/BCH/USDT,ETC/USDT]
   output_mode: cli
   update_interval: 3600
