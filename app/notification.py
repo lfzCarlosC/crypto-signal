@@ -307,7 +307,7 @@ class Notifier():
         file = open(sys.argv[2], mode='r')
         text = file.read()
         if text == "":
-            return ""
+            return "", ""
 
         (exchange, period, type) = self.convertTitle();
         title = '信号： '+ exchange + "  " + period + "    " + type + '\n\n'
