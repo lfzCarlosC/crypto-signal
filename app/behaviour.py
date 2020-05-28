@@ -34,6 +34,8 @@ class Behaviour():
         "MACD 量能上涨异常": "green",
         "macd金叉信号": "green",
         "0轴上macd金叉信号": "green",
+        "macd金叉信号 + DMI": "green",
+        "DMI+": "green"
     }
 
     def __init__(self, config, exchange_interface, notifier):
@@ -248,7 +250,7 @@ class Behaviour():
 
                     ############################################# dmi
                     lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
-                    lastNDMIIsPositiveFork = (self.lastNDMIIsPositive(delta_di, 1) or self.lastNDMIIsPositive(delta_di, 2) or self.lastNDMIIsPositive(delta_di, 3))
+                    lastNDMIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 3)
 
                     ############################################# macdBottomDivergence
                     hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
@@ -374,8 +376,8 @@ class Behaviour():
                         if (goldenForkMacd):
                             self.printResult(new_result, exchange, market_pair, output_mode, ("0轴上" if intersectionValueAndMin[0] > 0 else "") + "macd金叉信号", indicatorTypeCoinMap)
 
-                        # if (lastNDMIIsPositiveFork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "DMI", indicatorTypeCoinMap)
+                        if (lastNDMIIsPositiveFork):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
                         #
                         # if (ema7IsOverEma65):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿65日ema线", indicatorTypeCoinMap)
@@ -398,9 +400,9 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
                                              indicatorTypeCoinMap)
 
-                        # if (lastNDMIIsPositiveFork and goldenForkMacd):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
-                        #                      indicatorTypeCoinMap)
+                        if (lastNDMIIsPositiveFork and goldenForkMacd):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
+                                             indicatorTypeCoinMap)
 
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
