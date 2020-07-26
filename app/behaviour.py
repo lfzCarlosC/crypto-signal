@@ -623,7 +623,8 @@ class Behaviour():
                     and (macd_signal[i] < 0 and macd_signal[min] < 0):
                 return True;
         except  Exception as e:
-          print("段内底背离 异常:" + e)
+          print("段内底背离 异常:")
+          print(e)
         return False
 
     #段内顶背离
@@ -641,7 +642,8 @@ class Behaviour():
                     and (macd_signal[i] > 0 and macd_signal[maxx] > 0):
                 return True;
         except  Exception as e:
-          print("段内顶背离 异常:" + e)
+          print("段内顶背离 异常:")
+          print(e)
         return False
 
     #分立跳空底背离
@@ -664,7 +666,8 @@ class Behaviour():
           else:
             return False;
         except Exception as e:
-          print("分立跳空底背离:" + e)
+          print("分立跳空底背离:")
+          print(e)
         return False
 
     #分立跳空顶背离
@@ -687,7 +690,8 @@ class Behaviour():
           else:
             return False;
         except Exception as e:
-          print("分立跳空顶背离:" + e)
+          print("分立跳空顶背离:")
+          print(e)
         return False
 
     def detectMacdSlots(self, macd, times, direction):
