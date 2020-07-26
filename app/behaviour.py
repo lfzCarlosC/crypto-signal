@@ -204,7 +204,11 @@ class Behaviour():
 
                     ########################################## goldenMacdFork
                     intersectionValueAndMin = [0, 0]
-                    goldenForkMacd = (
+                    if not (len(macd) == 0 \
+                            or len(macd_signal) == 0 \
+                            or len(delta_macd) == 0):
+
+                      goldenForkMacd = (
 
                         (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0
                          and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
@@ -215,9 +219,9 @@ class Behaviour():
                         (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] >= 0
                          and delta_macd[len(delta_macd)-4] <= 0
                          and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 3, intersectionValueAndMin))
-                    )
+                      )
 
-                    macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
+                      macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
                                 delta_macd[len(delta_macd) - 2] >= 0) and (delta_macd[len(delta_macd) - 1] >= (
                                 delta_macd[len(delta_macd) - 2] * 3))
 
