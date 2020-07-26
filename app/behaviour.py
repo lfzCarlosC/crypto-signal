@@ -608,7 +608,11 @@ class Behaviour():
     def detectBottomDivergence(self, delta_macd, data, macd_signal):
         try:
           delta_len = (len(data) - len(macd_signal))
-          (start, end) = self.detectMacdSlots(delta_macd, 0, "negative")
+          zeroMacd = self.detectMacdSlots(delta_macd, 0, "negative")
+          if not zeroMacd:
+              return False;
+
+          (start, end) = zeroMacd
           min = self.getIndexOfMacdValley(delta_macd, start, end)
           for i in range(min, end, 1):
             if(0 > delta_macd[i] > delta_macd[min]) and (data[i + delta_len] < data[min + delta_len]) \
@@ -622,7 +626,11 @@ class Behaviour():
     def detectPeakDivergence(self, delta_macd, data, macd_signal):
         try:
           delta_len = (len(data) - len(macd_signal))
-          (start, end) = self.detectMacdSlots(delta_macd, 0, "positive")
+          zeroMacd = self.detectMacdSlots(delta_macd, 0, "positive")
+          if not zeroMacd:
+              return False;
+
+          (start, end) = zeroMacd
           maxx = self.getIndexOfMacdPeak(delta_macd, start, end)
           for i in range(maxx, end, 1):
             if(0 < delta_macd[i] < delta_macd[maxx]) and (data[i + delta_len] > data[maxx + delta_len]) \
@@ -638,7 +646,7 @@ class Behaviour():
           delta_len = (len(data) - len(macd_signal))
           zeroMacd = self.detectMacdSlots(delta_macd, 0, "negative")
           firstMacd = self.detectMacdSlots(delta_macd, 1, "negative")
-          if zeroMacd or firstMacd:
+          if not zeroMacd or not firstMacd:
             return False;
 
           (start1, end1) = zeroMacd
@@ -659,8 +667,13 @@ class Behaviour():
     def detectMultiplePeakDivergence(self, delta_macd, data, macd_signal):
         try:
           delta_len = (len(data) - len(macd_signal))
-          (start1, end1) = self.detectMacdSlots(delta_macd, 0, "positive")
-          (start2, end2) = self.detectMacdSlots(delta_macd, 1, "positive")
+          zeroMacd = self.detectMacdSlots(delta_macd, 0, "positive")
+          firstMacd = self.detectMacdSlots(delta_macd, 1, "positive")
+          if not zeroMacd or not firstMacd:
+            return False;
+
+          (start1, end1) = zeroMacd
+          (start2, end2) = firstMacd
           max1 = self.getIndexOfMacdPeak(delta_macd, start1, end1)
           max2 = self.getIndexOfMacdPeak(delta_macd, start2, end2)
           if (delta_macd[max2] > delta_macd[max1] > 0) \
