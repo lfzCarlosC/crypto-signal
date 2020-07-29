@@ -35,7 +35,8 @@ class Behaviour():
         "macd金叉信号": "green",
         "0轴上macd金叉信号": "green",
         "macd金叉信号 + DMI": "green",
-        "DMI+": "green"
+        "DMI+": "green",
+        "TD+底部2B信号": "green"
     }
 
     def __init__(self, config, exchange_interface, notifier):
