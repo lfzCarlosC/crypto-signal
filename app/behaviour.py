@@ -117,7 +117,7 @@ class Behaviour():
 
             for market_pair in market_data[exchange]:
 
-                if not (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") or  market_pair.lower().endswith("eth")):
+                if not (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")):
                     continue;
 
                 if market_pair not in new_result[exchange]:
