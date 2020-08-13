@@ -36,7 +36,8 @@ class Behaviour():
         "0轴上macd金叉信号": "green",
         "macd金叉信号 + DMI": "green",
         "DMI+": "green",
-        "TD+底部2B信号": "green"
+        "TD+底部2B信号": "green",
+        "底部2B信号": "green"
     }
 
     def __init__(self, config, exchange_interface, notifier):
@@ -378,6 +379,10 @@ class Behaviour():
                             if (self.isBottom2B(volume, opened, close)):
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
 
+                        if (self.isBottom2B(volume, opened, close)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "底部2B信号",
+                                             indicatorTypeCoinMap)
+
                         if (goldenForkMacd):
                             self.printResult(new_result, exchange, market_pair, output_mode, ("0轴上" if intersectionValueAndMin[0] > 0 else "") + "macd金叉信号", indicatorTypeCoinMap)
 
@@ -466,11 +471,22 @@ class Behaviour():
 
     def isBottom2B(self, volume, opened, close):
         # -- price
-        priceMatches2BPattern = (opened[-2] < close[-2]) and (opened[-2] <= opened[-3]) and (close[-2] > close[-3])
+        priceMatches2BPattern = (opened[-3] > close[-3]) and (opened[-2] < close[-2])\
+                                and (opened[-2] <= (close[-3] + (opened[-3] - close[-3])*0.05))\
+                                and (close[-2] > opened[-3])
         # -- volume
         volumeMatches2BPattern = (volume[-3] < volume[-2])
+
+        # -- price
+        priceMatches2BPatternMinusOne = (opened[-4] > close[-4]) and (opened[-3] < close[-3])\
+                                and (opened[-3] <= (close[-4] + (opened[-4] - close[-4])*0.05))\
+                                and (close[-3] > opened[-4])
+        # -- volume
+        volumeMatches2BPatternMinusOne = (volume[-4] < volume[-3])
+
         # --indicator
         return (priceMatches2BPattern and volumeMatches2BPattern)
+                or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
 
     def tdDeteminator(self, gap, td):
         td9PositiveFlag = False
