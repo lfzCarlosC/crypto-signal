@@ -485,8 +485,8 @@ class Behaviour():
         volumeMatches2BPatternMinusOne = (volume[-4] < volume[-3])
 
         # --indicator
-        return (priceMatches2BPattern and volumeMatches2BPattern)
-                or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
+        return (priceMatches2BPattern and volumeMatches2BPattern) \
+               or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
 
     def tdDeteminator(self, gap, td):
         td9PositiveFlag = False
