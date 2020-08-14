@@ -73,7 +73,7 @@ class Notifier():
             )
             enabled_notifiers.append('slack')
 
-        self.gmail_configured = self._validate_required_config('gmai', notifier_config)
+        self.gmail_configured = self._validate_required_config('gmail', notifier_config)
         if self.gmail_configured:
             self.gmail_client = GmailNotifier(
                 username=notifier_config['gmail']['required']['username'],
