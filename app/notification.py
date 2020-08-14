@@ -312,8 +312,8 @@ class Notifier():
         (exchange, period, type) = self.convertTitle();
         title = '信号： '+ exchange + "  " + period + "    " + type + '\n\n'
         if sys.argv[5] and (sys.argv[5] == '-prefix'):
-          prefix = self.notifier_config['gmail']['prefix']
-          title = prefix + title
+            prefix = self.notifier_config['gmail']['prefix']
+            title = prefix + title
         new_message = new_message + "<html><head></head><body>"
         # new_message = new_message + self.getLocalizeTime() + "\n"
         new_message = new_message + text
