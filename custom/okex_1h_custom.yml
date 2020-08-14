@@ -184,6 +184,7 @@ notifiers:
         is {{status}}!{{ ''
 
         '' -}}'}
+    prefix: defi
     required: {webhook: null}
   stdout:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}

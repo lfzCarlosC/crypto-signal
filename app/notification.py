@@ -73,7 +73,7 @@ class Notifier():
             )
             enabled_notifiers.append('slack')
 
-        self.gmail_configured = self._validate_required_config('gmail', notifier_config)
+        self.gmail_configured = self._validate_required_config('gmai', notifier_config)
         if self.gmail_configured:
             self.gmail_client = GmailNotifier(
                 username=notifier_config['gmail']['required']['username'],
@@ -311,6 +311,9 @@ class Notifier():
 
         (exchange, period, type) = self.convertTitle();
         title = '信号： '+ exchange + "  " + period + "    " + type + '\n\n'
+        if sys.argv[5] and (sys.argv[5] == '-prefix'):
+          prefix = self.notifier_config['gmail']['prefix']
+          title = prefix + title
         new_message = new_message + "<html><head></head><body>"
         # new_message = new_message + self.getLocalizeTime() + "\n"
         new_message = new_message + text
