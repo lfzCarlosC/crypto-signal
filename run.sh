@@ -127,7 +127,7 @@ for(( i=0;i<${#modes[@]};i++)); do
     fi
     
 #Monthly
-    if [ "$runlevel" == "1h" ]
+    if [ "$runlevel" == "1M" ]
     then
         python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/hitbtc_M_${modes[i]}.yml ${modes[i]}/hitbtc_M.log ${modes[i]} -a &
