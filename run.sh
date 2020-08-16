@@ -105,9 +105,9 @@ for(( i=0;i<${#modes[@]};i++)); do
         python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a &
 
 #   python3 app/app.py  ${modes[i]}/gateio_4h_${modes[i]}.yml ${modes[i]}/gateio_4h.log ${modes[i]} -a &
-#   python3 app/app.py  ${modes[i]}/gateio_6h_${modes[i]}.yml ${modes[i]}/gateio_6h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/gateio_12h_${modes[i]}.yml ${modes[i]}/gateio_12h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/gateio_w_${modes[i]}.yml ${modes[i]}/gateio_w.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/gateio_6h_${modes[i]}.yml ${modes[i]}/gateio_6h.log ${modes[i]} -a &
+#python3 app/app.py  ${modes[i]}/gateio_12h_${modes[i]}.yml ${modes[i]}/gateio_12h.log ${modes[i]} -a &
+#python3 app/app.py  ${modes[i]}/gateio_w_${modes[i]}.yml ${modes[i]}/gateio_w.log ${modes[i]} -a &
 
 #    python3 app/app.py  ${modes[i]}/kucoin_1h_${modes[i]}.yml ${modes[i]}/kucoin_1h.log ${modes[i]} -a &
 #    python3 app/app.py  ${modes[i]}/kucoin_4h_${modes[i]}.yml ${modes[i]}/kucoin_4h.log ${modes[i]} -a &
