@@ -77,7 +77,7 @@ for(( i=0;i<${#modes[@]};i++)); do
         python3 app/app.py  ${modes[i]}/okex_1h_${modes[i]}.yml ${modes[i]}/okex_1h.log ${modes[i]} -a &
     fi
 
-    if ["runpackage"  == "y"]
+    if ["$runpackage"  == "y"]
     then
 #    python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
 #    python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
