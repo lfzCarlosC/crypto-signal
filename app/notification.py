@@ -29,7 +29,11 @@ class Notifier():
                    "bittrex": "bittrex",
                    "okex": "ok交易所",
                    "zb": "zb交易所",
-                   "kucoin": "kucoin交易所"}
+                   "kucoin": "kucoin交易所",
+                   "coinex":"coinex交易所",
+                   "hitBtc":"hitBtc交易所"
+                  }
+                  
     periodMap = {"15min":"15分钟","30min":"30分钟","1h":"1小时", "1d":"日线", "d":"日线", "3d":"3日", "4h":"4小时", "6h":"6小时", "12h":"12小时", "w":"周线"}
     cst_tz = timezone('Asia/Shanghai')  
     utc_tz = timezone('UTC')
