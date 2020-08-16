@@ -27,6 +27,7 @@ class Notifier():
                    "bitfinex": "bitfinex交易所",
                    "huobi": "火币全球",
                    "bittrex": "bittrex",
+                   "gateio": "gateio",
                    "okex": "ok交易所",
                    "zb": "zb交易所",
                    "kucoin": "kucoin交易所",
