@@ -98,6 +98,11 @@ for(( i=0;i<${#modes[@]};i++)); do
     python3 app/app.py  ${modes[i]}/hitbtc_3d_${modes[i]}.yml ${modes[i]}/hitbtc_3d.log ${modes[i]} -a &
     python3 app/app.py  ${modes[i]}/hitbtc_w_${modes[i]}.yml ${modes[i]}/hitbtc_w.log ${modes[i]} -a &
 
+    python3 app/app.py  ${modes[i]}/coinex_12h_${modes[i]}.yml ${modes[i]}/coinex_12h.log ${modes[i]} -a &
+    python3 app/app.py  ${modes[i]}/coinex_d_${modes[i]}.yml ${modes[i]}/coinex_d.log ${modes[i]} -a &
+    python3 app/app.py  ${modes[i]}/coinex_3d_${modes[i]}.yml ${modes[i]}/coinex_3d.log ${modes[i]} -a &
+    python3 app/app.py  ${modes[i]}/coinex_w_${modes[i]}.yml ${modes[i]}/coinex_w.log ${modes[i]} -a &
+
 #    python3 app/app.py  ${modes[i]}/huobi_4h_${modes[i]}.yml ${modes[i]}/huobi_4h.log ${modes[i]} -a &
     python3 app/app.py  ${modes[i]}/huobi_d_${modes[i]}.yml ${modes[i]}/huobi_d.log ${modes[i]} -a &
     python3 app/app.py  ${modes[i]}/huobi_w_${modes[i]}.yml ${modes[i]}/huobi_w.log ${modes[i]} -a &
