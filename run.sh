@@ -78,6 +78,7 @@ for(( i=0;i<${#modes[@]};i++)); do
     fi
 
     if ["runpackage"  == "y"]
+    then
 #    python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
 #    python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a &
@@ -123,7 +124,8 @@ for(( i=0;i<${#modes[@]};i++)); do
 
 #    python3 app/app.py  ${modes[i]}/binance_15min_${modes[i]}.yml ${modes[i]}/binance_15min.log ${modes[i]} -a &
 #    python3 app/app.py  ${modes[i]}/binance_30min_${modes[i]}.yml ${modes[i]}/binance_30min.log ${modes[i]} -a &
-
+    fi
+    
 #Monthly
     if [ "$runlevel" == "1h" ]
     then
