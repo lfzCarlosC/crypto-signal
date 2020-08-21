@@ -361,15 +361,15 @@ class Behaviour():
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "上升突破三角形",
                         #                      indicatorTypeCoinMap)
 
-                        if (macdVolumeIncreasesSurprisingly):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "MACD 量能上涨异常",
-                                             indicatorTypeCoinMap)
+                        #if (macdVolumeIncreasesSurprisingly):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "MACD 量能上涨异常",
+                        #                     indicatorTypeCoinMap)
 
-                        if (td1PositiveFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 1位置", indicatorTypeCoinMap)
+                        #if (td1PositiveFlag):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 1位置", indicatorTypeCoinMap)
 
-                        if (td2PositiveFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 2位置", indicatorTypeCoinMap)
+                        #if (td2PositiveFlag):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 2位置", indicatorTypeCoinMap)
 
                         if (td9NegativeFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 9位置", indicatorTypeCoinMap)
@@ -377,19 +377,19 @@ class Behaviour():
                         if (td13NegativeFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 13位置", indicatorTypeCoinMap)
 
-                        if (td9PositiveFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 9位置", indicatorTypeCoinMap)
+                        #if (td9PositiveFlag):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 9位置", indicatorTypeCoinMap)
 
-                        if (td13PositiveFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 13位置", indicatorTypeCoinMap)
+                        #if (td13PositiveFlag):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 13位置", indicatorTypeCoinMap)
 
                         if (td13NegativeFlag42B or td9NegativeFlag42B):
                             if (self.isBottom2B(volume, opened, close)):
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
 
-                        if (self.isBottom2B(volume, opened, close)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "底部2B信号",
-                                             indicatorTypeCoinMap)
+                        #if (self.isBottom2B(volume, opened, close)):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "底部2B信号",
+                        #                     indicatorTypeCoinMap)
 
                         if (goldenForkMacd):
                             self.printResult(new_result, exchange, market_pair, output_mode, ("0轴上" if intersectionValueAndMin[0] > 0 else "") + "macd金叉信号", indicatorTypeCoinMap)
@@ -445,14 +445,14 @@ class Behaviour():
                         if (hasBottomDivergence):
                             self.printResult(new_result, exchange, market_pair, output_mode, "段内底背离", indicatorTypeCoinMap)
 
-                        if (hasPeakDivergence):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "段内顶背离", indicatorTypeCoinMap)
+                        #if (hasPeakDivergence):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "段内顶背离", indicatorTypeCoinMap)
 
                         if (hasMultipleBottomDivergence):
                             self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空底背离", indicatorTypeCoinMap)
 
-                        if (hasMultiplePeakDivergnce):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空顶背离", indicatorTypeCoinMap)
+                        #if (hasMultiplePeakDivergnce):
+                        #    self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空顶背离", indicatorTypeCoinMap)
 
                         # if (stochrsi_goldenfork and goldenForkKdj and lastNDMIIsPositiveVolume and (delta_macd[len(delta_macd)-1] > delta_macd[len(delta_macd)-2])):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + kdj金叉信号 + DMI+ + macd量能减小", indicatorTypeCoinMap)
