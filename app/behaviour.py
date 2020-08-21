@@ -188,18 +188,18 @@ class Behaviour():
                     td13PositiveFlag = False
                     td9NegativeFlag = False
                     td13NegativeFlag = False
-                    td1NegativeFlag = False
-                    td2NegativeFlag = False
+                    td1PositiveFlag = False
+                    td2PositiveFlag = False
 
                     td9PositiveFlag42B = False
                     td13PositiveFlag42B = False
-                    td1NegativeFlag42B = False
-                    td2NegativeFlag42B = False
+                    td1PostiveFlag42B = False
+                    td2PositiveFlag42B = False
                     td9NegativeFlag42B = False
                     td13NegativeFlag42B = False
                     if('td' in indicators):
                         td = indicators['td'][0]['result']['td'];
-                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag, td1NegativeFlag, td2NegativeFlag) = self.tdDeteminator(2, td)
+                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag, td1PositiveFlag, td2PositiveFlag) = self.tdDeteminator(2, td)
 
                         ###################################### 2B indicator
                         # This 2B is based on TD bottom point. It pick ups the 2B point near/at TD 9 point.
@@ -208,7 +208,7 @@ class Behaviour():
                         # valleyIndex = new_result[exchange][market_pair]['indicators']['valley_loc'][0]['result']['valley_loc']
 
                         #- bottom 2B for later use
-                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B, td1NegativeFlag42B, td2NegativeFlag42B) = self.tdDeteminator(3, td)
+                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B, td1PostiveFlag42B, td2PositiveFlag42B) = self.tdDeteminator(3, td)
 
                     ########################################## goldenMacdFork
                     intersectionValueAndMin = [0, 0]
@@ -218,15 +218,11 @@ class Behaviour():
 
                       goldenForkMacd = (
 
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0
-                         and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
+                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0) or
+                         # and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
 
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0
-                         and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin)) or
-
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] >= 0
-                         and delta_macd[len(delta_macd)-4] <= 0
-                         and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 3, intersectionValueAndMin))
+                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0)
+                         # and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin))
                       )
 
                       macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
@@ -369,10 +365,10 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "MACD 量能上涨异常",
                                              indicatorTypeCoinMap)
 
-                        if (td1NegativeFlag):
+                        if (td1PositiveFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 1位置", indicatorTypeCoinMap)
 
-                        if (td2NegativeFlag):
+                        if (td2PositiveFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 2位置", indicatorTypeCoinMap)
 
                         if (td9NegativeFlag):
@@ -505,8 +501,8 @@ class Behaviour():
         td9NegativeFlag = False
         td13PositiveFlag = False
         td13NegativeFlag = False
-        td1NegativeFlag = False
-        td2NegativeFlag = False
+        td1PositiveFlag = False
+        td2PositiveFlag = False
 
         if (td[len(td) - gap] == 9):
             td9PositiveFlag = True;
@@ -521,12 +517,12 @@ class Behaviour():
             td13NegativeFlag = True;
 
         if (td[len(td) - gap] == 1):
-            td1NegativeFlag = True;
+            td1PositiveFlag = True;
 
         if (td[len(td) - gap] == 2):
-            td2NegativeFlag = True;
+            td2PositiveFlag = True;
 
-        return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag, td1NegativeFlag, td2NegativeFlag;
+        return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag, td1PositiveFlag, td2PositiveFlag;
 
     def isOverceedingTriangleLine(self, loc_ids, ohlcv):
         indexX1 = loc_ids[0]
