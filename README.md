@@ -25,15 +25,15 @@ Technical Analysis Automated:
 * Strategies by combining/tweaking certain indicators.
 
 Alerts:
-* SMS via Twilio
 * Email
-* Slack
-* Telegram
-* Discord
 
 Features:
 * Modular code for easy trading strategy implementation
 * Easy install with Docker
+
+NExt:
+* To increase the accuracy, detect trends in lower level by measuring the closeness of each EMA -> get coins which the big trend will occur on.
+
 
 You can build on top of this tool and implement algorithm trading and some machine learning models to experiment with predictive analysis.
 
