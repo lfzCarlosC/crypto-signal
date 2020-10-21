@@ -12,7 +12,7 @@ import structlog
 from conf import Configuration
 from exchange import ExchangeInterface
 from notification import Notifier
-from behaviour import Behaviour
+from strategies.plain_indicators_display import plain_indicators_display
 
 def main():
     """Initializes the application
@@ -29,7 +29,7 @@ def main():
     exchange_interface = ExchangeInterface(config.exchanges)
     notifier = Notifier(config.notifiers)
 
-    behaviour = Behaviour(
+    behaviour = plain_indicators_display(
         config,
         exchange_interface,
         notifier

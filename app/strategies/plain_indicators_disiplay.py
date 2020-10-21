@@ -18,7 +18,7 @@ import traceback
 
 import sys
 
-class Behaviour():
+class plain_indicators_display():
     """Default analyzer which gives users basic trading information.
     """
     trendColor = {
@@ -469,9 +469,9 @@ class Behaviour():
 
         #write everything to the email
         for indicator in indicatorTypeCoinMap:
-            f.write("<p style='color: " + Behaviour.trendColor[indicator] +"; font-size:30px;'> <b>" + indicator + "</b></p>\n");
+            f.write("<p style='color: " + plain_indicators_display.trendColor[indicator] + "; font-size:30px;'> <b>" + indicator + "</b></p>\n");
             for coin in indicatorTypeCoinMap[indicator]:
-                f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" +  coin.replace('/','') + " " + indicator + '</p>\n' );
+                f.write("<p style='color: " + plain_indicators_display.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/', '') + " " + indicator + '</p>\n');
         f.close();
         
         # Print an empty line when complete
@@ -921,7 +921,7 @@ class Behaviour():
             list: A list of dictinaries containing the results of the analysis.
         """
 
-        results = { indicator: list() for indicator in self.indicator_conf.keys() }
+        results = { indicator: map() for indicator in self.indicator_conf.keys() }
         historical_data_cache = dict()
 
         # for indicator in self.indicator_conf:
@@ -955,7 +955,7 @@ class Behaviour():
                     if 'period_count' in indicator_conf:
                         analysis_args['period_count'] = indicator_conf['period_count']
 
-                    results[indicator].append({
+                    results[indicator][candle_period] = {
                         'result': self._get_analysis_result(
                             self.indicator_dispatcher,
                             indicator,
@@ -963,7 +963,7 @@ class Behaviour():
                             market_pair
                         ),
                         'config': indicator_conf
-                    })
+                    };
         return results
 
 
