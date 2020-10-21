@@ -391,11 +391,11 @@ class Behaviour():
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "底部2B信号",
                         #                     indicatorTypeCoinMap)
 
-                        if (goldenForkMacd):
-                            self.printResult(new_result, exchange, market_pair, output_mode, ("0轴上" if intersectionValueAndMin[0] > 0 else "") + "macd金叉信号", indicatorTypeCoinMap)
+                        if (goldenForkMacd and intersectionValueAndMin[0]):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
 
-                        if (lastNDMIIsPositiveFork):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
+                        # if (lastNDMIIsPositiveFork):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
                         #
                         # if (ema7IsOverEma65):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿65日ema线", indicatorTypeCoinMap)
