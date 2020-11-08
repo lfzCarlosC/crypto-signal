@@ -35,11 +35,11 @@ Features:
 * Modular code for easy trading strategy implementation
 * Easy install with Docker
 
-v2.0
+## v2.0
 * support more powerful and practical indicators and tuning
 * refine notification system(refine gmail, add DingTalk)
 
-v3.0
+## v3.0
 * api for submitting job to execute strategy 
 * strategic level change of using timeLevel resonance
 
