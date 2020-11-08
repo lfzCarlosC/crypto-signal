@@ -12,13 +12,13 @@ Technical Analysis Automated:
 * Ichimoku Cloud (Leading Span A, Leading Span B, Conversion Line, Base Line)
 * Simple Moving Average
 * Exponential Moving Average
-* MACD(Divergence)  
+* MACD(Divergence) (V2.0) 
 * MFI
 * OBV
 * VWAP
-* KDJ
-* DMI
-* TD（Demark sequence)
+* KDJ(V2.0)
+* DMI(V2.0)
+* TD(V2.0)
 * RSI
 * Triangle breakthrough(super-advanced for trending analysis) :)
 
@@ -35,7 +35,16 @@ Features:
 * Modular code for easy trading strategy implementation
 * Easy install with Docker
 
+v2.0
+* support more powerful and practical indicators and tuning
+* refine notification system(refine gmail, add DingTalk)
+
+v3.0
+* api for submitting job to execute strategy 
+* strategic level change of using timeLevel resonance
+
 You can build on top of this tool and implement algorithm trading and some machine learning models to experiment with predictive analysis.
+
 
 ## Installing And Running
 The commands listed below are intended to be run in a terminal.
