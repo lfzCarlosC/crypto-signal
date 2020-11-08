@@ -85,31 +85,51 @@ class Behaviour():
             self.logger.info("Scan all flag set to true. using all available on exchange.")
             market_pairs = None
 
-        market_data = self.exchange_interface.get_exchange_markets(markets=market_pairs)
+        market_data = self.exchange_interface.get_exchange_markets(markets = market_pairs)
 
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
 
-        self.truncateFile()
-        new_result = self._test_strategies(market_data, output_mode)
-
-        self.notifier.notify_all(new_result)
+        if sys.argv[5:]:
+            if (sys.argv[5] == '_get_indicator_data'):
+                indicatorTypeCoinMap = self._get_indicator_data(market_data, output_mode)
+                return indicatorTypeCoinMap
+        else:
+            self._notify_strategies_data(market_data, output_mode)
 
     def truncateFile(self):
         f = open(sys.argv[2],'r+')
         f.truncate()
 
     def isCloseTo(self, start, actual, target):
-        if((target-actual)/(actual-start) < 0.05):
+        if((target-actual) / (actual-start) < 0.05):
             return True;
 
-    def _test_strategies(self, market_data, output_mode):
+    def _notify_strategies_data(self, market_data, output_mode):
+        self.truncateFile()
+        f = open(sys.argv[2], 'a')
+        (indicatorTypeCoinMap, new_result) = self._apply_strategies(market_data, output_mode)
+        self.persistInEmailFormat(f, indicatorTypeCoinMap);
+        self.notifier.notify_all(new_result)
+
+    def _get_indicator_data(self, market_data, output_mode):
+        (indicatorTypeCoinMap, new_result) = self._apply_strategies(market_data, output_mode)
+        return indicatorTypeCoinMap
+
+    def persistInEmailFormat(self, f, indicatorTypeCoinMap) :
+        #write everything to the email
+        for indicator in indicatorTypeCoinMap:
+            f.write("<p style='color: " + Behaviour.trendColor[indicator] +"; font-size:30px;'> <b>" + indicator + "</b></p>\n");
+            for coin in indicatorTypeCoinMap[indicator]:
+                f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
+        f.close();
+
+    def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
 
         Args:
             market_data (dict): A dictionary containing the market data of the symbols to analyze.
             output_mode (str): Which console output mode to use.
         """
-        f = open(sys.argv[2],'a')
         indicatorModes = sys.argv[3]
         indicatorTypeCoinMap = defaultdict(list)
         new_result = dict()
@@ -125,6 +145,10 @@ class Behaviour():
                 if market_pair not in new_result[exchange]:
                     new_result[exchange][market_pair] = dict()
 
+                """
+                set olhcv data
+                a bad implementation: this should be performed concurrently
+                """
                 new_result[exchange][market_pair]['indicators'] = self._get_indicator_results(
                     exchange,
                     market_pair
@@ -467,15 +491,7 @@ class Behaviour():
                     print(e)
                     traceback.print_exc()
 
-        #write everything to the email
-        for indicator in indicatorTypeCoinMap:
-            f.write("<p style='color: " + Behaviour.trendColor[indicator] +"; font-size:30px;'> <b>" + indicator + "</b></p>\n");
-            for coin in indicatorTypeCoinMap[indicator]:
-                f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" +  coin.replace('/','') + " " + indicator + '</p>\n' );
-        f.close();
-        
-        # Print an empty line when complete
-        return new_result
+        return (indicatorTypeCoinMap, new_result);
 
     def isBottom2B(self, volume, opened, close):
         # -- price
