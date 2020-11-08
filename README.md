@@ -41,7 +41,14 @@ Features:
 
 ## v3.0(Mark XLIV)
 * api for submitting job to execute strategy 
+   1. job framework(done)
+   2. add redis to store signal
+   3. explore frontend tech for building a dashboard
 * strategic level change of using timeLevel resonance
+
+## future consideration
+* dockerize each running instance
+* kafka to store job parameters
 
 You can build on top of this tool and implement algorithm trading and some machine learning models to experiment with predictive analysis.
 
