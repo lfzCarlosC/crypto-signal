@@ -15,6 +15,9 @@ from outputs import Output
 import numpy as np
 from collections import defaultdict
 import traceback
+import json
+import uuid
+import os
 
 import sys
 
@@ -93,12 +96,15 @@ class Behaviour():
             if (sys.argv[5] == '_get_indicator_data'):
                 indicatorTypeCoinMap = self._get_indicator_data(market_data, output_mode)
                 return indicatorTypeCoinMap
+            elif (sys.argv[5] == '_write_strategic_data'):
+                return self._write_strategic_data(market_data, output_mode)
         else:
             self._notify_strategies_data(market_data, output_mode)
 
     def truncateFile(self):
         f = open(sys.argv[2],'r+')
         f.truncate()
+        f.close()
 
     def isCloseTo(self, start, actual, target):
         if((target-actual) / (actual-start) < 0.05):
@@ -107,13 +113,34 @@ class Behaviour():
     def _notify_strategies_data(self, market_data, output_mode):
         self.truncateFile()
         f = open(sys.argv[2], 'a')
-        (indicatorTypeCoinMap, new_result) = self._apply_strategies(market_data, output_mode)
+        (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
         self.persistInEmailFormat(f, indicatorTypeCoinMap);
         self.notifier.notify_all(new_result)
 
+    def _write_strategic_data(self, market_data, output_mode):
+        (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
+
+        #UUID for DB storage later
+        # fileId = uuid.uuid4().hex
+
+        os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/tmp")
+        fileId = list(market_data)[0] + "-" + self.indicator_conf['macd'][0]['candle_period'] + "-" + "_write_strategic_data"
+        with open(fileId, 'w+') as f:
+            f.write(json.dumps(indicatorTypeCoinMap, sort_keys=True, ensure_ascii=False))
+            f.close()
+        return fileId
+
     def _get_indicator_data(self, market_data, output_mode):
         (indicatorTypeCoinMap, new_result) = self._apply_strategies(market_data, output_mode)
-        return indicatorTypeCoinMap
+        return (indicatorTypeCoinMap, new_result)
+
+    def persistInPlainFormat(self, f, indicatorTypeCoinMap) :
+        #write everything to the email
+        for indicator in indicatorTypeCoinMap:
+            f.write("<p style='color: " + Behaviour.trendColor[indicator] +"; font-size:30px;'> <b>" + indicator + "</b></p>\n");
+            for coin in indicatorTypeCoinMap[indicator]:
+                f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
+        f.close();
 
     def persistInEmailFormat(self, f, indicatorTypeCoinMap) :
         #write everything to the email
