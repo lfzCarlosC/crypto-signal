@@ -34,8 +34,6 @@ public class CryptalSignalJob implements JobExecutor{
            infoReader.lines().forEach(System.out::println);
 
            String fileId = baseDir + "/../tmp/" + exchangeId + "-" + timeLevel + "-" + signalJobType;return getResponse(fileId);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
            throw new RuntimeException(e);
        }
