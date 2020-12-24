@@ -1,6 +1,4 @@
-# Cryptal Ark v2.0（Konig）
-
-![Image description](https://camo.githubusercontent.com/8ff9052c806702c3d32898e7bccee1743a712361/68747470733a2f2f73616c6d616e61736c616d70722e66696c65732e776f726470726573732e636f6d2f323031332f30372f657277696e2d6b6f6e69672e6a7067)
+# Cryptal Ark v2.0
 
 Cryptal Ark is a trend detecting tool for your crypto currency Technical Analysis (TA).
 
@@ -39,12 +37,14 @@ Features:
 * support more powerful and practical indicators and tuning
 * refine notification system(refine gmail, add DingTalk)
 
-## v3.0(Mark XLIV)
+## v3.0(Mark XLIV in progress...)
 * api for submitting job to execute strategy 
    1. job framework(done)
    2. add redis to store signal
    3. explore frontend tech for building a dashboard
 * strategic level change of using timeLevel resonance
+
+![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/api/arch.jpg)
 
 ## future consideration
 * dockerize each running instance
