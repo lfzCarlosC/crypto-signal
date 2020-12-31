@@ -1,9 +1,7 @@
 """ Crossover analysis indicator
 """
 
-import numpy
 import pandas
-from talib import abstract
 
 from analyzers.utils import IndicatorUtils
 
