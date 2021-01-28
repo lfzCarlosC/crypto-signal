@@ -476,7 +476,10 @@ class Behaviour():
 
                         if (
                                 ((low[len(low)-1] >= (1-0.05) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.05) * ema60[len(ema60)-1])
-                                or (low[len(low)-1] >= (1-0.05) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.05) * ema30[len(ema30)-1]))
+                                or (low[len(low)-1] >= (1-0.05) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.05) * ema30[len(ema30)-1])
+                                or (close[len(close)-1] >= (1-0.05) * ema30[len(ema30)-1] and close[len(close)-1] <= (1+0.05) * ema30[len(ema30)-1])
+                                or (close[len(close)-1] >= (1-0.05) * ema60[len(ema60)-1] and close[len(close)-1] <= (1+0.05) * ema60[len(ema60)-1])
+                                )
                                 and
                                 (close[len(close)-1] < opened[len(opened)-1])
 
