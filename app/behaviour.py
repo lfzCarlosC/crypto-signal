@@ -42,7 +42,8 @@ class Behaviour():
         "macd金叉信号 + DMI": "green",
         "DMI+": "green",
         "TD+底部2B信号": "green",
-        "底部2B信号": "green"
+        "底部2B信号": "green",
+        "沾到ema30/ema60": "green"
     }
 
     def __init__(self, config, exchange_interface, notifier):
@@ -219,8 +220,8 @@ class Behaviour():
                     # try:
                     #     ema7 = new_result[exchange][market_pair]['informants']['ema7'][0]['result']['ema'];
                     #     ema22 = new_result[exchange][market_pair]['informants']['ema22'][0]['result']['ema'];
-                    #     ema33 = new_result[exchange][market_pair]['informants']['ema33'][0]['result']['ema'];
-                    #     ema65 = new_result[exchange][market_pair]['informants']['ema65'][0]['result']['ema'];
+                    ema30 = new_result[exchange][market_pair]['informants']['ema30'][0]['result']['ema'];
+                    ema60 = new_result[exchange][market_pair]['informants']['ema60'][0]['result']['ema'];
                     #
                     #     ema7IsOverEma65 = self.ema7OverEma65(ema7, ema65);
                     #     ema7IsOverEma22 = self.ema7OverEma22(ema7, ema22);
@@ -473,6 +474,15 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
                                              indicatorTypeCoinMap)
 
+                        if (
+                                ((low[len(low)-1] >= (1-0.05) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.05) * ema60[len(ema60)-1])
+                                or (low[len(low)-1] >= (1-0.05) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.05) * ema30[len(ema30)-1]))
+                                and
+                                (close[len(close)-1] < opened[len(opened)-1])
+
+                        ):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30/ema60",
+                                             indicatorTypeCoinMap)
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
 
