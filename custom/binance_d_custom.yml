@@ -145,15 +145,15 @@ informants:
     enabled: true
     period_count: 22
     signal: [ema]
-  ema33:
+  ema30:
   - candle_period: 1d
     enabled: true
-    period_count: 33
+    period_count: 30
     signal: [ema]
-  ema65:
+  ema60:
   - candle_period: 1d
     enabled: true
-    period_count: 65
+    period_count: 60
     signal: [ema]
   ema120:
   - candle_period: 1d
@@ -227,6 +227,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [CTXC/USDT]
+  market_pairs: []
   output_mode: cli
   update_interval: 86400
