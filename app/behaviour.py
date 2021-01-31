@@ -887,8 +887,8 @@ class Behaviour():
     def lastNDMIIsPositive(self, delta_dmi,n):
         if ((delta_dmi[len(delta_dmi) - 1] > 0 and
             delta_dmi[len(delta_dmi) - 2] < 0)
-        
-        and
+
+        or
 
             (delta_dmi[len(delta_dmi) - 1] > 0 and
             delta_dmi[len(delta_dmi) - 2] > 0 and
