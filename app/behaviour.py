@@ -885,9 +885,15 @@ class Behaviour():
         return (True, test_arr);
 
     def lastNDMIIsPositive(self, delta_dmi,n):
-        if ((delta_dmi[len(delta_dmi) - 1] > 0) and
-            (delta_dmi[len(delta_dmi) - 1] > 0) and
-            (delta_dmi[len(delta_dmi) - 2] <0)):
+        if ((delta_dmi[len(delta_dmi) - 1] > 0 and
+            delta_dmi[len(delta_dmi) - 2] < 0)
+        
+        and
+
+            (delta_dmi[len(delta_dmi) - 1] > 0 and
+            delta_dmi[len(delta_dmi) - 2] > 0 and
+            delta_dmi[len(delta_dmi) - 3] < 0)):
+
             return True;
         return False;
 
