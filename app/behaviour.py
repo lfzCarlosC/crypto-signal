@@ -203,7 +203,10 @@ class Behaviour():
                     volume = ohlcv['volume'] ;
                     plus_di = new_result[exchange][market_pair]['indicators']['plus_di'][0]['result']['plus_di'] ;
                     minus_di = new_result[exchange][market_pair]['indicators']['minus_di'][0]['result']['minus_di'] ;
+                    plus_dm = new_result[exchange][market_pair]['indicators']['plus_dm'][0]['result']['plus_dm'];
+                    minus_dm = new_result[exchange][market_pair]['indicators']['minus_dm'][0]['result']['minus_dm'];
                     delta_di = plus_di - minus_di
+                    delta_dm = plus_dm - minus_dm
                     macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macd'];  #white line
                     macd_signal = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdsignal']; #yellow line
                     delta_macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdhist']; #macd volume
@@ -310,7 +313,8 @@ class Behaviour():
 
                     ############################################# dmi
                     lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
-                    lastNDMIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 3)
+                    lastNDIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 2)
+                    lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 2)
 
                     ############################################# macdBottomDivergence
                     hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
@@ -446,8 +450,8 @@ class Behaviour():
                         if (goldenForkMacd and intersectionValueAndMin[0]):
                             self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
 
-                        # if (lastNDMIIsPositiveFork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
+                        if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
                         #
                         # if (ema7IsOverEma65):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿65日ema线", indicatorTypeCoinMap)
@@ -470,7 +474,7 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
                                              indicatorTypeCoinMap)
 
-                        if (lastNDMIIsPositiveFork and goldenForkMacd):
+                        if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and goldenForkMacd):
                             self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
                                              indicatorTypeCoinMap)
 
@@ -881,12 +885,18 @@ class Behaviour():
         return (True, test_arr);
 
     def lastNDMIIsPositive(self, delta_dmi,n):
-        theOneBefore = delta_dmi[len(delta_dmi) - n - 1];
-        flag = self.lastNDataIsPositive(delta_dmi, n);
-        if(flag):
-            return (theOneBefore < 0);
-        else:
-            return flag;
+        if ((delta_dmi[len(delta_dmi) - 1] > 0) and
+            (delta_dmi[len(delta_dmi) - 1] > 0) and
+            (delta_dmi[len(delta_dmi) - 2] <0)):
+            return True;
+        return False;
+
+        # theOneBefore = delta_dmi[len(delta_dmi) - n - 1];
+        # flag = self.lastNDataIsPositive(delta_dmi, n);
+        # if(flag):
+        #     return (theOneBefore < 0);
+        # else:
+        #     return flag;
 
     def lastNDataIsPositive(self, delta, n):
         test_arr = delta[0 - n:];

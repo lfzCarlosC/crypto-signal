@@ -104,6 +104,24 @@ indicators:
     hot: 0
     period_count: 10
     signal: [plus_di]
+  minus_dm:
+    - alert_enabled: true
+      alert_frequency: once
+      candle_period: 1d
+      cold: 0
+      enabled: true
+      hot: 0
+      period_count: 10
+      signal: [minus_dm]
+  plus_dm:
+    - alert_enabled: true
+      alert_frequency: once
+      candle_period: 1d
+      cold: 0
+      enabled: true
+      hot: 0
+      period_count: 10
+      signal: [plus_dm]
   rsi:
   - alert_enabled: true
     alert_frequency: once
