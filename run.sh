@@ -16,6 +16,9 @@ cat /dev/null > w${modes[i]}.log
 read -p 'run level: (1h/1M)' runlevel
 read -p 'run package(1d/3d/12h/1w): (y/n)' runpackage
 
+#flush redis
+redis-cli FLUSHALL
+
 #for(( i=0;i<${#modes[@]};i++)); do
 
 #    python3 app/updateCoinList.py bittrex.sh ${modes[i]}/bittrex_1h_${modes[i]}.yml
