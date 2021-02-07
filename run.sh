@@ -1,3 +1,4 @@
+. ~/.bash_profile
 kill -9 `ps -ef | grep app.py | awk '{print $1}'`
 
 #update username locally
