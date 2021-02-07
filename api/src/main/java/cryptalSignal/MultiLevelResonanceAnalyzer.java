@@ -29,17 +29,18 @@ public class MultiLevelResonanceAnalyzer implements ExitCodeGenerator {
 
     private static ConfigurableApplicationContext context;
     private static RedisTemplate<String, Object> redisTemplate;
+    private static MultiLevelResonanceAnalyzer multiLevelResonanceAnalyzer;
     @Autowired
     private JavaMailSender javaMailSender;
 
     public static void main(String[] args) {
         context =  SpringApplication.run(MultiLevelResonanceAnalyzer.class, args);
         redisTemplate = context.getBean("redisTemplate", RedisTemplate.class);
+        multiLevelResonanceAnalyzer = new MultiLevelResonanceAnalyzer();
     }
 
     @Scheduled(fixedDelay = 14400000, initialDelay = 1800000)
     private void scheduleProcessTask() {
-        MultiLevelResonanceAnalyzer multiLevelResonanceAnalyzer = new MultiLevelResonanceAnalyzer();
         List<String> pairs = multiLevelResonanceAnalyzer.getData(redisTemplate);
         Optional<String> pairStr = pairs.stream().reduce((pair1, pair2) -> pair1 + "\n" + pair2);
         if (pairStr.isPresent()) {
