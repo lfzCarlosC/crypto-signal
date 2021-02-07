@@ -151,3 +151,5 @@ for(( i=0;i<${#modes[@]};i++)); do
  #   python3 app/app.py  ${modes[i]}/okex_1d_${modes[i]}_contract.yml ${modes[i]}/okex_1d_contract.log ${modes[i]} &
  #   python3 app/app.py  ${modes[i]}/okex_15min_${modes[i]}_contract.yml ${modes[i]}/okex_15min_contract.log ${modes[i]} &
 done
+
+java -jar api/out/artifacts/cryptal_signal_api_jar/cryptal-signal.api.jar
