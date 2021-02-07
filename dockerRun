@@ -31,3 +31,4 @@ brew install talib
 pip3 install scipy
 pip3 install matplotlib
 pip3 install redis
+apk add  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
