@@ -5,6 +5,7 @@
 
 from copy import deepcopy
 
+import redis
 import structlog
 from ccxt import ExchangeError
 from tenacity import RetryError
@@ -92,15 +93,18 @@ class Behaviour():
         market_data = self.exchange_interface.get_exchange_markets(markets = market_pairs)
 
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
+        exchange = list(market_data.keys())[0]
 
+        (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
         if sys.argv[5:]:
             if (sys.argv[5] == '_get_indicator_data'):
-                indicatorTypeCoinMap = self._get_indicator_data(market_data, output_mode)
                 return indicatorTypeCoinMap
             elif (sys.argv[5] == '_write_strategic_data'):
                 return self._write_strategic_data(market_data, output_mode)
+            elif (sys.argv[5] == '_write_strategic_data_redis'):
+                self.persistInRedis(indicatorTypeCoinMap, exchange)
         else:
-            self._notify_strategies_data(market_data, output_mode)
+            self._notify_strategies_data(indicatorTypeCoinMap, exchange, new_result)
 
     def truncateFile(self):
         f = open(sys.argv[2],'r+')
@@ -111,12 +115,22 @@ class Behaviour():
         if((target-actual) / (actual-start) < 0.05):
             return True;
 
-    def _notify_strategies_data(self, market_data, output_mode):
+    def _notify_strategies_data(self, indicatorTypeCoinMap, exchange, new_result):
         self.truncateFile()
         f = open(sys.argv[2], 'a')
-        (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
+        self.persistInRedis(indicatorTypeCoinMap, exchange)
         self.persistInEmailFormat(f, indicatorTypeCoinMap);
         self.notifier.notify_all(new_result)
+
+    def persistInRedis(self, indicatorTypeCoinMap, exchange):
+        r = redis.Redis();
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+        for indicator in indicatorTypeCoinMap:
+            for coin in indicatorTypeCoinMap[indicator]:
+                candle_periods = r.hget(coin, str.encode(indicator).decode('utf-8'))
+                r.hset(coin + "|" + exchange, str.encode(indicator).decode('utf-8'),
+                       candle_period if candle_periods is None else candle_periods.decode('utf-8') + "|" + candle_period)
+        r.close();
 
     def _write_strategic_data(self, market_data, output_mode):
         (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
@@ -371,45 +385,6 @@ class Behaviour():
                     #(narrowedBoll, test_arr) = self.lastNBoolIsNarrowed((upperband/lowerband)**10, 5) # counts of narrowed points
                     #continuousKRise
                     lastNKPositive = self.lastNKIsPositive(distance_close_open)
-
-                    ######################################## report coins that match indicators
-                    if(indicatorModes == 'easy'):
-
-                        if (goldenForkMacd and intersectionValueAndMin[0]>0):
-                           self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
-
-                        if (rsiIsLessThan30 and goldenForkMacd):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + rsi小于30", indicatorTypeCoinMap)
-
-                        # if (lastNKPositive):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "连续3根k阳线", indicatorTypeCoinMap)
-
-                        if (stochrsi_goldenfork and goldenForkMacd):
-                            self.printResult(new_result, exchange, market_pair, output_mode,"stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
-
-                        if (macdBottomDivergence and lastNDMIIsPositive):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
-
-                        if (macdBottomDivergence and stochrsi_goldenfork):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + stochrsi强弱指标金叉", indicatorTypeCoinMap)
-
-                        if (volumeIsGreater):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "volume放量涨幅超过3倍",
-                                             indicatorTypeCoinMap)
-
-                        #contract market
-                        if (market_pair[-1:].isdigit()):
-
-                            if (goldenForkKdj):
-                                self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号", indicatorTypeCoinMap)
-
-                            if (deadForkKdj):
-                                self.printResult(new_result, exchange, market_pair, output_mode, "kdj死叉信号", indicatorTypeCoinMap)
-
-                            # if (detectMacdVolumeIsShrinked and stochrsi_deadfork):
-                            #         self.printResult(new_result, exchange, market_pair, output_mode, "macd量能萎缩 + stochrsi强弱指标死叉", indicatorTypeCoinMap)
-
-                            #stochrsi_deadfork and deadForkMacd
 
                     if(indicatorModes == 'custom'):
 
