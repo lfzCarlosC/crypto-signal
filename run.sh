@@ -82,8 +82,8 @@ for(( i=0;i<${#modes[@]};i++)); do
 
     if [ "$runpackage"  == "y" ]
     then
-#    python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
-#    python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a &
@@ -102,12 +102,12 @@ for(( i=0;i<${#modes[@]};i++)); do
 #        python3 app/app.py  ${modes[i]}/poloniex_3d_${modes[i]}.yml ${modes[i]}/poloniex_3d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/poloniex_w_${modes[i]}.yml ${modes[i]}/poloniex_w.log ${modes[i]} -a &
 
-#    python3 app/app.py  ${modes[i]}/huobi_4h_${modes[i]}.yml ${modes[i]}/huobi_4h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/huobi_4h_${modes[i]}.yml ${modes[i]}/huobi_4h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/huobi_d_${modes[i]}.yml ${modes[i]}/huobi_d.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/huobi_w_${modes[i]}.yml ${modes[i]}/huobi_w.log ${modes[i]} -a &
 
-#    python3 app/app.py  ${modes[i]}/okex_4h_${modes[i]}.yml ${modes[i]}/okex_4h.log ${modes[i]} -a &
-#    python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/okex_4h_${modes[i]}.yml ${modes[i]}/okex_4h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a &
@@ -119,8 +119,8 @@ for(( i=0;i<${#modes[@]};i++)); do
 
 #    python3 app/app.py  ${modes[i]}/kucoin_1h_${modes[i]}.yml ${modes[i]}/kucoin_1h.log ${modes[i]} -a &
 #    python3 app/app.py  ${modes[i]}/kucoin_4h_${modes[i]}.yml ${modes[i]}/kucoin_4h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/kucoin_d_${modes[i]}.yml ${modes[i]}/kucoin_d.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/kucoin_w_${modes[i]}.yml ${modes[i]}/kucoin_w.log ${modes[i]} -a &
+        #python3 app/app.py  ${modes[i]}/kucoin_d_${modes[i]}.yml ${modes[i]}/kucoin_d.log ${modes[i]}  -a &
+        #python3 app/app.py  ${modes[i]}/kucoin_w_${modes[i]}.yml ${modes[i]}/kucoin_w.log ${modes[i]} -a &
 
 #   python3 app/app.py  ${modes[i]}/bittrex_1h_${modes[i]}.yml ${modes[i]}/bittrex_1h.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/bittrex_1d_${modes[i]}.yml ${modes[i]}/bittrex_1d.log ${modes[i]} -a &
