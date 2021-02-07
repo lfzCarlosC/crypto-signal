@@ -38,7 +38,7 @@ class StrategyAnalyzer():
             'plus_dm': plus_dm.PLUS_DM().analyze,
             # 'stoch_rsi': stoch_rsi.StochasticRSI().analyze,
             # 'obv': obv.OBV().analyze,
-            # 'kdj': kdj.KDJ().analyze,
+            'kdj': kdj.KDJ().analyze,
             'td': td.TD().analyze
             # 'peak_loc': peak_loc.Peak_Loc().analyze,
             # 'valley_loc': valley_loc.Valley_Loc().analyze

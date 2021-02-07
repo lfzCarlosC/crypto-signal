@@ -44,7 +44,8 @@ class Behaviour():
         "DMI+": "green",
         "TD+底部2B信号": "green",
         "底部2B信号": "green",
-        "沾到ema30/ema60": "green"
+        "沾到ema30/ema60": "green",
+        "kdj金叉信号": "green"
     }
 
     def __init__(self, config, exchange_interface, notifier):
@@ -228,9 +229,9 @@ class Behaviour():
                     # rsi = new_result[exchange][market_pair]['indicators']['rsi'][0]['result']['rsi'];
                     # stoch_slow_k = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_k'];
                     # stoch_slow_d = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_d'];
-                    # kt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['k'];
-                    # dt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['d'];
-                    # jt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['j'];
+                    kt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['k'];
+                    dt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['d'];
+                    jt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['j'];
 
                     ######################################### ema indicator
                     #now contains: ema7IsOverEma65 ema7IsOverEma22 ema7IsOverEma33
@@ -287,11 +288,9 @@ class Behaviour():
 
                       goldenForkMacd = (
 
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0
-                         and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
+                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0) or
 
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0
-                          and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin))
+                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0)
                       )
 
                       macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
@@ -309,14 +308,14 @@ class Behaviour():
                     #     macdVolumeMinusIsDecreased = True
 
                     ############################################## goldenForkKdj
-                    # len_k = len(kt)
-                    # len_d = len(dt)
-                    # len_j = len(jt)
-                    # goldenForkKdj = (
-                    #     ((dt[len_d-2] >= kt[len_k-2]) and (kt[len_k-2] >= jt[len_j-2]))
-                    #     and
-                    #     ((dt[len_d-1] <= kt[len_k-1]) and (kt[len_k-1] <= jt[len_j-1]))
-                    # )
+                    len_k = len(kt)
+                    len_d = len(dt)
+                    len_j = len(jt)
+                    goldenForkKdj = (
+                        ((dt[len_d-2] >= kt[len_k-2]) and (kt[len_k-2] >= jt[len_j-2]))
+                        and
+                        ((dt[len_d-1] <= kt[len_k-1]) and (kt[len_k-1] <= jt[len_j-1]))
+                    )
 
                     ############################################# deadForkKdj
                     # deadForkKdj = (
@@ -467,9 +466,9 @@ class Behaviour():
                         ):
                             self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30/ema60",
                                              indicatorTypeCoinMap)
+
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
-
 
                         # if (macdBottomDivergence and lastNDMIIsPositiveFork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
@@ -479,6 +478,12 @@ class Behaviour():
 
                         # if (goldenForkKdj and goldenForkMacd):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + macd金叉信号", indicatorTypeCoinMap)
+
+                        if (goldenForkMacd):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号", indicatorTypeCoinMap)
+
+                        if (goldenForkKdj):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号", indicatorTypeCoinMap)
 
                         # if (goldenForkKdj and lastNDMIIsPositiveFork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + DMI", indicatorTypeCoinMap)
