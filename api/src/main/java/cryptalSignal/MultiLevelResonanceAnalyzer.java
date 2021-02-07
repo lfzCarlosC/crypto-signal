@@ -37,7 +37,7 @@ public class MultiLevelResonanceAnalyzer implements ExitCodeGenerator {
         redisTemplate = context.getBean("redisTemplate", RedisTemplate.class);
     }
 
-    @Scheduled(fixedDelay = 14450000, initialDelay = 1000)
+    @Scheduled(fixedDelay = 14400000, initialDelay = 1800000)
     private void scheduleProcessTask() {
         MultiLevelResonanceAnalyzer multiLevelResonanceAnalyzer = new MultiLevelResonanceAnalyzer();
         List<String> pairs = multiLevelResonanceAnalyzer.getData(redisTemplate);
