@@ -17,10 +17,12 @@ import numpy as np
 from collections import defaultdict
 import traceback
 import json
-import uuid
 import os
 
 import sys
+
+from repository.signalrepository import SignalRepository
+
 
 class Behaviour():
     """Default analyzer which gives users basic trading information.
@@ -71,6 +73,7 @@ class Behaviour():
         output_interface = Output()
         self.output = output_interface.dispatcher
 
+        self.signal_repository = SignalRepository()
 
     def run(self, market_pairs, output_mode):
         """The analyzer entrypoint
@@ -139,6 +142,16 @@ class Behaviour():
         #UUID for DB storage later
         # fileId = uuid.uuid4().hex
 
+        #write to redis
+        #informant[0]["candle_period"]  market_data.getkey() indicatorTypeCoinMap
+        exchangeId = list(market_data)[0]
+
+        #iterate indicatorTypeCoinMap e.g. 'binance-4h-macd', [BTCUSDT, ETHUSDT....]
+        for indicator in indicatorTypeCoinMap:
+            candle_period = self.indicator_conf['macd'][0]['candle_period']
+            signalKey = exchangeId + "-" + candle_period + "-" + indicator
+            self.signal_repository.storeIndicator(signalKey, indicatorTypeCoinMap[indicator])
+
         os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/tmp")
         fileId = list(market_data)[0] + "-" + self.indicator_conf['macd'][0]['candle_period'] + "-" + "_write_strategic_data"
         with open(fileId, 'w+') as f:
@@ -147,8 +160,7 @@ class Behaviour():
         return fileId
 
     def _get_indicator_data(self, market_data, output_mode):
-        (indicatorTypeCoinMap, new_result) = self._apply_strategies(market_data, output_mode)
-        return (indicatorTypeCoinMap, new_result)
+        return self._apply_strategies(market_data, output_mode)
 
     def persistInPlainFormat(self, f, indicatorTypeCoinMap) :
         #write everything to the email
@@ -166,6 +178,9 @@ class Behaviour():
                 f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
         f.close();
 
+    def isInConcernedCoinPairs(self, market_pair):
+        return market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")
+
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
 
@@ -182,7 +197,7 @@ class Behaviour():
 
             for market_pair in market_data[exchange]:
 
-                if not (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")):
+                if not self.isInConcernedCoinPairs(market_pair):
                     continue;
 
                 if market_pair not in new_result[exchange]:
