@@ -38,10 +38,11 @@ Features:
 * refine notification system(refine gmail, add DingTalk)
 
 ## v3.0(Mark XLIV in progress...)
+![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/mark.jpeg)
 * api for submitting job to execute strategy 
    1. job framework(done)
-   2. add redis to store signal
-   3. explore frontend tech for building a dashboard
+   2. add redis to store signal(done)
+   3. explore frontend tech for building a dashboard(maybe postponed as the requirement is not really necessary)
 * strategic level change of using timeLevel resonance
 
 ![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/api/arch.jpg)
