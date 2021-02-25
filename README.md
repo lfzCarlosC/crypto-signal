@@ -38,7 +38,7 @@ Features:
 * refine notification system(refine gmail, add DingTalk)
 
 ## v3.0(Mark XLIV in progress...)
-![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/mark\u0020)xliv.jpeg)
+![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/markxliv.jpeg)
 * api for submitting job to execute strategy 
    1. job framework(done)
    2. add redis to store signal(done)
