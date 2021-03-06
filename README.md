@@ -46,7 +46,7 @@ Features:
 * strategic level change of using timeLevel resonance(done)
  
 ## v4.0
-* as a popular exchange called FTX increases more and more items to be tradable(tokenized stocks), it is necessary for cryptal-signal to support FTX
+* as a popular exchange called FTX increases more and more new tradable items such as tokenized stocks, it is necessary for cryptal-signal to support FTX
 
 
 ## future consideration
