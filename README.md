@@ -44,11 +44,11 @@ Features:
    2. add redis to store signal(done)
    3. explore frontend tech for building a dashboard(maybe postponed as the requirement is not really necessary)
 * strategic level change of using timeLevel resonance(done)
+![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/api/arch.jpg)
 
 ## v4.0
 * as a popular exchange called FTX increases more and more items to be tradable(tokenized stocks), it is necessary for cryptal-signal to support FTX
 
-![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/api/arch.jpg)
 
 ## future consideration
 * dockerize each running instance
