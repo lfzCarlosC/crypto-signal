@@ -37,13 +37,16 @@ Features:
 * support more powerful and practical indicators and tuning
 * refine notification system(refine gmail, add DingTalk)
 
-## v3.0(Mark XLIV ready to be released)
+## v3.0(Mark XLIV)
 ![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/markxliv.jpeg)
 * api for submitting job to execute strategy 
    1. job framework(done)
    2. add redis to store signal(done)
    3. explore frontend tech for building a dashboard(maybe postponed as the requirement is not really necessary)
 * strategic level change of using timeLevel resonance(done)
+
+## v4.0
+* as a popular exchange called FTX increases more and more items to be tradable(tokenized stocks), it is necessary for cryptal-signal to support FTX
 
 ![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/api/arch.jpg)
 
