@@ -23,7 +23,8 @@ class Notifier():
     """Handles sending notifications via the configured notifiers
     """
 
-    exchangeMap = {"binance": "币安",
+    exchangeMap = {"ftx": "ftx交易所",
+                   "binance": "币安",
                    "bitfinex": "bitfinex交易所",
                    "huobi": "火币全球",
                    "bittrex": "bittrex",
