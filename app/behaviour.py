@@ -166,6 +166,10 @@ class Behaviour():
                 f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
         f.close();
 
+    def detectCoinPairs(self, market_pair):
+        return market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") \
+               or (self.indicator_conf['macd'][0]['candle_period'] in ['3d', '1w'] and market_pair.lower().endswith("btc"));
+
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
 
@@ -182,7 +186,7 @@ class Behaviour():
 
             for market_pair in market_data[exchange]:
 
-                if not (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")):
+                if not (self.detectCoinPairs(market_pair)):
                     continue;
 
                 if market_pair not in new_result[exchange]:
@@ -1062,7 +1066,7 @@ class Behaviour():
 
                     if 'period_count' in informant_conf:
                         analysis_args['period_count'] = informant_conf['period_count']
-                   
+
                     results[informant].append({
                         'result': self._get_analysis_result(
                             self.informant_dispatcher,
