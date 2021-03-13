@@ -46,7 +46,8 @@ Features:
 * strategic level change of using timeLevel resonance(done)
  
 ## v4.0
-* as a popular exchange called FTX increases more and more new tradable items such as tokenized stocks, it is necessary for cryptal-signal to support FTX
+* as a popular exchange called FTX increases more and more new tradable items such as tokenized stocks, it is necessary for cryptal-signal to support FTX（done）
+* an dedicated ema30/60 scanning app. due to the short period that the price keeps at ema30/60(or maybe just reach), it is necessary to design an app which scanner frequently(per hour) if the price reaches ema30/60 at 1d level.
 
 
 ## future consideration
