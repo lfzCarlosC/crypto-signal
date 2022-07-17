@@ -95,7 +95,7 @@ class Behaviour():
 
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
         exchange = list(market_data.keys())[0]
-
+        
         (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
         if sys.argv[5:]:
             if (sys.argv[5] == '_get_indicator_data'):
@@ -119,7 +119,7 @@ class Behaviour():
     def _notify_strategies_data(self, indicatorTypeCoinMap, exchange, new_result):
         self.truncateFile()
         f = open(sys.argv[2], 'a')
-        self.persistInRedis(indicatorTypeCoinMap, exchange)
+        #self.persistInRedis(indicatorTypeCoinMap, exchange)
         self.persistInEmailFormat(f, indicatorTypeCoinMap);
         self.notifier.notify_all(new_result)
 
@@ -167,8 +167,8 @@ class Behaviour():
         f.close();
 
     def detectCoinPairs(self, market_pair):
-        return market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") \
-               or (self.indicator_conf['macd'][0]['candle_period'] in ['3d', '1w'] and market_pair.lower().endswith("btc"));
+        return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")) \
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['12h','1d','3d', '1w']);
 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required

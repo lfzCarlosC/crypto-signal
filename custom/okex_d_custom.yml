@@ -187,7 +187,7 @@ notifiers:
 
         '' -}}'}
     required: {username: null, webhook: null}
-  gmail:
+  hotmail:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
 
@@ -196,7 +196,7 @@ notifiers:
       destination_emails : [cryptalreceiver@gmail.com,cryptolfz@hotmail.com]
       enable: true
       password: 868891251q1q1q1q
-      username: cryptalsender1@gmail.com
+      username: cryptalsender1@hotmail.com
   slack:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''

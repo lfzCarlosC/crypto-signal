@@ -12,6 +12,7 @@ from notifiers.twilio_client import TwilioNotifier
 from notifiers.slack_client import SlackNotifier
 from notifiers.discord_client import DiscordNotifier
 from notifiers.gmail_client import GmailNotifier
+from notifiers.hotmail_client import HotmailNotifier
 from notifiers.webhook_client import WebhookNotifier
 from notifiers.stdout_client import StdoutNotifier
 
@@ -88,6 +89,15 @@ class Notifier():
                 destination_addresses=notifier_config['gmail']['required']['destination_emails']
             )
             enabled_notifiers.append('gmail')
+
+        self.hotmail_configured = self._validate_required_config('hotmail', notifier_config)
+        if self.hotmail_configured:
+            self.gmail_client = HotmailNotifier(
+                username=notifier_config['hotmail']['required']['username'],
+                password=notifier_config['hotmail']['required']['password'],
+                destination_addresses=notifier_config['hotmail']['required']['destination_emails']
+            )
+            enabled_notifiers.append('hotmail')
 
         self.telegram_configured = self._validate_required_config('telegram', notifier_config)
 #        if self.telegram_configured:
