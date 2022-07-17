@@ -22,6 +22,9 @@ import os
 
 import sys
 
+import mysql.connector
+from datetime import date
+
 class Behaviour():
     """Default analyzer which gives users basic trading information.
     """
@@ -47,6 +50,13 @@ class Behaviour():
         "沾到ema30/ema60": "green",
         "kdj金叉信号": "green"
     }
+
+    mydb = mysql.connector.connect(
+        host="localhost",  # 数据库主机地址
+        user="root",  # 数据库用户名
+        passwd="",  # 数据库密码
+        database = "cs"
+    )
 
     def __init__(self, config, exchange_interface, notifier):
         """Initializes DefaultBehaviour class.
@@ -168,7 +178,7 @@ class Behaviour():
 
     def detectCoinPairs(self, market_pair):
         return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['12h','1d','3d', '1w']);
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['12h', '1d', '3d', '1w']);
 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
@@ -407,9 +417,11 @@ class Behaviour():
 
                         if (td9NegativeFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 9位置", indicatorTypeCoinMap)
+                            self.toDb("TD 底部 9位置", exchange, market_pair)
 
                         if (td13NegativeFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 13位置", indicatorTypeCoinMap)
+                            self.toDb("TD 底部 13位置", exchange, market_pair)
 
                         #if (td9PositiveFlag):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 9位置", indicatorTypeCoinMap)
@@ -420,6 +432,7 @@ class Behaviour():
                         if (td13NegativeFlag42B or td9NegativeFlag42B):
                             if (self.isBottom2B(volume, opened, close)):
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
+                                self.toDb("TD+底部2B信号", exchange, market_pair)
 
                         #if (self.isBottom2B(volume, opened, close)):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "底部2B信号",
@@ -903,7 +916,15 @@ class Behaviour():
                                 self.output[output_mode](output_data, criteriaType, market_pair, exchange, indicatorTypeCoinMap),
                                 end=''
             )
-    
+
+    def toDb(self, td_name, exchange, market_pair):
+        candle_period = self.indicator_conf['macd'][0]['candle_period'];
+        sql = "INSERT INTO td(td_name, market_pair, candle_period, exchange, create_date) values (%s,%s,%s,%s,%s)"
+        val = (td_name, market_pair, candle_period, exchange, date.today())
+        Behaviour.mydb.cursor().execute(sql, val)
+        Behaviour.mydb.commit()  # 数据表内容有更新，必须使用到该语句
+        print(Behaviour.mydb.cursor().rowcount, "记录插入成功。")
+
     def lastNMacdsArePositive(self, delta_macd, macd, n):
         (result, min) = self.lastNMinusMacdVolume(macd)
         test_arr = delta_macd[0-n:];
