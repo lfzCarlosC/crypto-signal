@@ -919,8 +919,12 @@ class Behaviour():
 
     def toDb(self, td_name, exchange, market_pair):
         candle_period = self.indicator_conf['macd'][0]['candle_period'];
-        sql = "INSERT INTO td(td_name, market_pair, candle_period, exchange, create_date) values (%s,%s,%s,%s,%s)"
-        val = (td_name, market_pair, candle_period, exchange, date.today())
+        sql = "INSERT INTO td(td_name, market_pair, candle_period, exchange, create_date) " \
+              "select distinct %s,%s,%s,%s,%s from dual where not exists( select 1 from td " \
+              "where td_name = %s and market_pair = %s and candle_period = %s and exchange = %s " \
+              "and create_date >= date_sub(%s, interval 10 day) and create_date <= %s)"
+        val = (td_name, market_pair, candle_period, exchange, date.today(),
+               td_name, market_pair, candle_period, exchange, date.today(), date.today())
         Behaviour.mydb.cursor().execute(sql, val)
         Behaviour.mydb.commit()  # 数据表内容有更新，必须使用到该语句
         print(Behaviour.mydb.cursor().rowcount, "记录插入成功。")
