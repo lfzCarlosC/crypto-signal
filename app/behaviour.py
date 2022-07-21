@@ -52,7 +52,7 @@ class Behaviour():
     }
 
     mydb = mysql.connector.connect(
-        host="localhost",  # 数据库主机地址
+        host="127.0.0.1",  # 数据库主机地址
         user="root",  # 数据库用户名
         passwd="",  # 数据库密码
         database = "cs"

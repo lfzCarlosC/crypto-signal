@@ -158,5 +158,7 @@ done
 
 java -jar api/out/artifacts/cryptal_signal_api_jar/cryptal-signal.api.jar &
 
+#launch superset
+python3 -m venv venv
 . venv/bin/activate
 superset run -p 8088 --with-threads --reload --debugger
