@@ -48,7 +48,8 @@ class Behaviour():
         "TD+底部2B信号": "green",
         "底部2B信号": "green",
         "沾到ema30/ema60": "green",
-        "kdj金叉信号": "green"
+        "kdj金叉信号": "green",
+        "cci over 100": "green"
     }
 
     mydb = mysql.connector.connect(
@@ -178,7 +179,7 @@ class Behaviour():
 
     def detectCoinPairs(self, market_pair):
         return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['12h', '1d', '3d', '1w']);
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['6h','12h', '1d', '3d', '1w']);
 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
@@ -247,6 +248,8 @@ class Behaviour():
                     dt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['d'];
                     jt = new_result[exchange][market_pair]['indicators']['kdj'][0]['result']['j'];
 
+                    #cci
+                    cci = new_result[exchange][market_pair]['indicators']['cci'][0]['result']['cci'];
                     ######################################### ema indicator
                     #now contains: ema7IsOverEma65 ema7IsOverEma22 ema7IsOverEma33
                     # try:
@@ -293,6 +296,9 @@ class Behaviour():
 
                         #- bottom 2B for later use
                         (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B, td1PostiveFlag42B, td2PositiveFlag42B) = self.tdDeteminator(3, td)
+
+                    ########################################## cci
+                    isCciOver100 = (cci[len(cci) - 1] > 100) and (cci[len(cci) - 2] < 100)
 
                     ########################################## goldenMacdFork
                     intersectionValueAndMin = [0, 0]
@@ -429,6 +435,10 @@ class Behaviour():
                         #if (td13PositiveFlag):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 13位置", indicatorTypeCoinMap)
 
+                        if(self.isBottom2B(volume, opened, close) and (hasMultipleBottomDivergence or hasBottomDivergence)) :
+                            self.printResult(new_result, exchange, market_pair, output_mode, "背离+底部2B信号", indicatorTypeCoinMap)
+                            self.toDb("背离+底部2B信号", exchange, market_pair)
+
                         if (td13NegativeFlag42B or td9NegativeFlag42B):
                             if (self.isBottom2B(volume, opened, close)):
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
@@ -440,6 +450,7 @@ class Behaviour():
 
                         if (goldenForkMacd and intersectionValueAndMin[0]):
                             self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
+                            self.toDb("0轴上macd金叉信号", exchange, market_pair)
 
                         if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
                             self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
@@ -464,10 +475,12 @@ class Behaviour():
                             self.getIndexOfMacdValley(delta_macd, start, end)])):
                             self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
                                              indicatorTypeCoinMap)
+                            self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
 
                         if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and goldenForkMacd):
                             self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
                                              indicatorTypeCoinMap)
+                            self.toDb("macd金叉信号 + DMI", exchange, market_pair)
 
                         if (
                                 ((low[len(low)-1] >= (1-0.05) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.05) * ema60[len(ema60)-1])
@@ -528,6 +541,9 @@ class Behaviour():
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd下跌量能减弱",
                         #                      indicatorTypeCoinMap)
 
+                        if (isCciOver100):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "cci over 100", indicatorTypeCoinMap)
+                            self.toDb("cci over 100", exchange, market_pair)
 ######################################################
                 except Exception as e:
                     print("An exception occurred for " + market_pair + ":" + exchange)

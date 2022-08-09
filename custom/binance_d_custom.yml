@@ -148,6 +148,14 @@ indicators:
     signal: [kdj]
     hot: 0
     cold: 0
+  cci:
+  - candle_period: 1d
+    cold: 0
+    enabled: true
+    timeperiod: 144
+    hot: 0
+    signal: [cci]
+
 informants:
   bollinger_bands:
   - candle_period: 1d
@@ -198,6 +206,7 @@ informants:
     enabled: true
     period_count: 15
     signal: [vwap]
+
 notifiers:
   discord:
     optional: {avatar: null, template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}

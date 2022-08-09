@@ -27,11 +27,12 @@ class CCI(IndicatorUtils):
         """
 
         dataframe = self.convert_to_dataframe(historical_data)
-        macd_values = abstract.CCI(dataframe).iloc[:]
-        
-        macd_values.dropna(how='all', inplace=True)
-        if macd_values[signal[0]].shape[0]:
-            macd_values['is_hot'] = macd_values[signal[0]] > hot_thresh
-            macd_values['is_cold'] = macd_values[signal[0]] < cold_thresh
+        cci_values = abstract.CCI(dataframe, timeperiod=55).to_frame()
+        cci_values.dropna(how='all', inplace=True)
+        cci_values.rename(columns={0: 'cci'}, inplace=True)
 
-        return macd_values
+        if cci_values[signal[0]].shape[0]:
+            cci_values['is_hot'] = cci_values[signal[0]] > hot_thresh
+            cci_values['is_cold'] = cci_values[signal[0]] < cold_thresh
+
+        return cci_values

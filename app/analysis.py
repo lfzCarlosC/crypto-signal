@@ -6,7 +6,7 @@ import structlog
 from analyzers.informants import *
 from analyzers import *
 
-from analyzers.indicators import ichimoku, macd, rsi, momentum, mfi, adx, plus_di, minus_di, stoch_rsi, obv, kdj, td, minus_dm, plus_dm
+from analyzers.indicators import ichimoku, cci, macd, rsi, momentum, mfi, adx, plus_di, minus_di, stoch_rsi, obv, kdj, td, minus_dm, plus_dm
 
 
 class StrategyAnalyzer():
@@ -36,6 +36,7 @@ class StrategyAnalyzer():
             'minus_di': minus_di.MINUS_DI().analyze,
             'minus_dm': minus_dm.MINUS_DM().analyze,
             'plus_dm': plus_dm.PLUS_DM().analyze,
+            'cci': cci.CCI().analyze,
             # 'stoch_rsi': stoch_rsi.StochasticRSI().analyze,
             # 'obv': obv.OBV().analyze,
             'kdj': kdj.KDJ().analyze,

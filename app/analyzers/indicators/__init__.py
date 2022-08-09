@@ -12,5 +12,6 @@ __all__ = [
     'kdj',
     'td',
     'peak_loc',
-    'valley_loc'
+    'valley_loc',
+    'cci'
 ]
