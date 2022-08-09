@@ -1,4 +1,4 @@
-# Cryptal Ark v3.0
+# Cryptal Ark v4.0
 
 Cryptal Ark is a trend detecting tool for your crypto currency Technical Analysis (TA).
 
