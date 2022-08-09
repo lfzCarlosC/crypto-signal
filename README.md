@@ -38,7 +38,6 @@ Features:
 * refine notification system(refine gmail, add DingTalk)
 
 ## v3.0(Mark XLIV)
-![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/markxliv.jpeg)
 * api for submitting job to execute strategy 
    1. job framework(done)
    2. add redis to store signal(done)
@@ -46,6 +45,7 @@ Features:
 * strategic level change of using timeLevel resonance(done)
  
 ## v4.0
+![image](https://github.com/lfzCarlosC/crypto-signal/blob/master/project.png)
 * as a popular exchange called FTX increases more and more new tradable items such as tokenized stocks, it is necessary for cryptal-signal to support FTX（done）
 * an dedicated ema30/60 scanning app. due to the short period that the price keeps at ema30/60(or maybe just reach), it is necessary to design an app which scanner frequently(per hour) if the price reaches ema30/60 at 1d level.
 
