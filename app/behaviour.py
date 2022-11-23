@@ -307,10 +307,10 @@ class Behaviour():
                             or len(delta_macd) == 0):
 
                       goldenForkMacd = (
+                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
 
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0) or
-
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0)
+                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin))
+                      
                       )
 
                       macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
@@ -346,8 +346,8 @@ class Behaviour():
 
                     ############################################# dmi
                     lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
-                    lastNDIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 2)
-                    lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 2)
+                    lastNDIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 5)
+                    lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 5)
 
                     ############################################# macdBottomDivergence
                     hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
@@ -435,20 +435,17 @@ class Behaviour():
                         #if (td13PositiveFlag):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 13位置", indicatorTypeCoinMap)
 
-                        if(self.isBottom2B(volume, opened, close) and (hasMultipleBottomDivergence or hasBottomDivergence)) :
-                            self.printResult(new_result, exchange, market_pair, output_mode, "背离+底部2B信号", indicatorTypeCoinMap)
-                            self.toDb("背离+底部2B信号", exchange, market_pair)
+                       # if(self.isBottom2B(volume, opened, close) and (hasMultipleBottomDivergence or hasBottomDivergence)) :
+                       #     self.printResult(new_result, exchange, market_pair, output_mode, "背离+底部2B信号", indicatorTypeCoinMap)
+                       #     self.toDb("背离+底部2B信号", exchange, market_pair)
+
 
                         if (td13NegativeFlag42B or td9NegativeFlag42B):
                             if (self.isBottom2B(volume, opened, close)):
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
 
-                        #if (self.isBottom2B(volume, opened, close)):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "底部2B信号",
-                        #                     indicatorTypeCoinMap)
-
-                        if (goldenForkMacd and intersectionValueAndMin[0]):
+                        if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
                             self.toDb("0轴上macd金叉信号", exchange, market_pair)
 
@@ -477,7 +474,7 @@ class Behaviour():
                                              indicatorTypeCoinMap)
                             self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
 
-                        if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and goldenForkMacd):
+                        if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[self.getIndexOfMacdValley(delta_macd, start, end)]))):
                             self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
                                              indicatorTypeCoinMap)
                             self.toDb("macd金叉信号 + DMI", exchange, market_pair)
@@ -606,9 +603,9 @@ class Behaviour():
         priceX2 = ohlcv['close'][indexX2] if ohlcv['close'][indexX2] > ohlcv['open'][indexX1] else ohlcv['open'][indexX2];
         slope = self.getSlope(priceX1, indexX1, priceX2, indexX2);
         slopedPrice = self.calculatePriceAtGivenPlace(slope, indexX1, priceX1);
-        return self.isGreaterThanSlopedPrice(slopedPrice);
+        return self.isGreaterThanSlopedPrice(slopedPrice, ohlcv);
 
-    def isGreaterThanSlopedPrice(self, slopedPrice):
+    def isGreaterThanSlopedPrice(self, slopedPrice, ohlcv):
         # close[0] > open[0] && close[0] > estimatedValue && close[-1] <= estimatedValue
         if (ohlcv[0] > slopedPrice):
             return True;
@@ -905,7 +902,28 @@ class Behaviour():
 
             (delta_dmi[len(delta_dmi) - 1] > 0 and
             delta_dmi[len(delta_dmi) - 2] > 0 and
-            delta_dmi[len(delta_dmi) - 3] < 0)):
+            delta_dmi[len(delta_dmi) - 3] < 0)
+
+        or 
+            (delta_dmi[len(delta_dmi) - 1] > 0 and
+            delta_dmi[len(delta_dmi) - 2] > 0 and
+            delta_dmi[len(delta_dmi) - 3] > 0 and
+            delta_dmi[len(delta_dmi) - 4] < 0)
+
+        or
+            (delta_dmi[len(delta_dmi) - 1] > 0 and
+            delta_dmi[len(delta_dmi) - 2] > 0 and
+            delta_dmi[len(delta_dmi) - 3] > 0 and
+            delta_dmi[len(delta_dmi) - 4] > 0 and
+            delta_dmi[len(delta_dmi) - 5] < 0)
+        or
+            (delta_dmi[len(delta_dmi) - 1] > 0 and
+            delta_dmi[len(delta_dmi) - 2] > 0 and
+            delta_dmi[len(delta_dmi) - 3] > 0 and
+            delta_dmi[len(delta_dmi) - 4] > 0 and
+            delta_dmi[len(delta_dmi) - 5] > 0 and
+            delta_dmi[len(delta_dmi) - 6] < 0)
+        ):
 
             return True;
         return False;
