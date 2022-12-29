@@ -177,9 +177,13 @@ class Behaviour():
                 f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
         f.close();
 
-    def detectCoinPairs(self, market_pair):
-        return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['6h','12h', '1d', '3d', '1w']);
+    def detectCoinPairs(self, market_pair, marketPairFlag):
+        if marketPairFlag == 'usd':
+            return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")) \
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h','12h', '1d', '3d', '1w']);
+        elif marketPairFlag == 'btc':
+            return (market_pair.lower().endswith("btc")) \
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h','12h', '1d', '3d', '1w']);
 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
@@ -188,6 +192,11 @@ class Behaviour():
             market_data (dict): A dictionary containing the market data of the symbols to analyze.
             output_mode (str): Which console output mode to use.
         """
+        if len(sys.argv) > 5:
+            marketPairFlag = sys.argv[5]
+        else:
+            marketPairFlag = 'usd'
+
         indicatorModes = sys.argv[3]
         indicatorTypeCoinMap = defaultdict(list)
         new_result = dict()
@@ -197,7 +206,7 @@ class Behaviour():
 
             for market_pair in market_data[exchange]:
 
-                if not (self.detectCoinPairs(market_pair)):
+                if not (self.detectCoinPairs(market_pair, marketPairFlag)):
                     continue;
 
                 if market_pair not in new_result[exchange]:

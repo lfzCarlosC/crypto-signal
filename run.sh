@@ -1,4 +1,8 @@
 . ~/.bash_profile
+
+#activate conda env
+source ~/miniconda/bin/activate
+
 kill -9 `ps -ef | grep app.py | awk '{print $1}'`
 
 #update username locally
@@ -83,10 +87,15 @@ for(( i=0;i<${#modes[@]};i++)); do
 
     if [ "$runpackage"  == "y" ]
     then
+        python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a &
+
+        python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a btc &
+        python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a btc &
+
         python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a &
 
