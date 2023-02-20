@@ -131,8 +131,8 @@ class Behaviour():
         self.truncateFile()
         f = open(sys.argv[2], 'a')
         #self.persistInRedis(indicatorTypeCoinMap, exchange)
-        self.persistInEmailFormat(f, indicatorTypeCoinMap);
-        self.notifier.notify_all(new_result)
+        # self.persistInEmailFormat(f, indicatorTypeCoinMap);
+        # self.notifier.notify_all(new_result)
 
     def persistInRedis(self, indicatorTypeCoinMap, exchange):
         r = redis.Redis();
@@ -187,11 +187,12 @@ class Behaviour():
 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
-
+        
         Args:
             market_data (dict): A dictionary containing the market data of the symbols to analyze.
             output_mode (str): Which console output mode to use.
         """
+ 
         if len(sys.argv) > 5:
             marketPairFlag = sys.argv[5]
         else:
@@ -203,7 +204,7 @@ class Behaviour():
         for exchange in market_data:
             if exchange not in new_result:
                 new_result[exchange] = dict()
-
+            
             for market_pair in market_data[exchange]:
 
                 if not (self.detectCoinPairs(market_pair, marketPairFlag)):
@@ -414,6 +415,8 @@ class Behaviour():
                     #continuousKRise
                     lastNKPositive = self.lastNKIsPositive(distance_close_open)
 
+                    isBottom3kFlag = self.isBottom3k(low, high)
+
                     if(indicatorModes == 'custom'):
 
                         # if(self.isOverceedingTriangleLine(peakLoc, ohlcv)):
@@ -429,6 +432,10 @@ class Behaviour():
 
                         #if (td2PositiveFlag):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 2位置", indicatorTypeCoinMap)
+
+                        if(isBottom3kFlag):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "底部3k", indicatorTypeCoinMap)
+                            self.toDb("底部3k", exchange, market_pair)
 
                         if (td9NegativeFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 9位置", indicatorTypeCoinMap)
@@ -557,6 +564,11 @@ class Behaviour():
                     traceback.print_exc()
 
         return (indicatorTypeCoinMap, new_result);
+
+    #3k线判别
+    def isBottom3k(self, low, high):  
+        #low[0] > low[-1], low[-2] > low[-1], high[0] > high[-2]
+        return (low[len(low)-1] > low[len(low)-2]) and (low[len(low)-3] > low[len(low)-2]) and (low[len(low)-1] > low[len(low)-3])
 
     def isBottom2B(self, volume, opened, close):
         # -- price
