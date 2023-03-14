@@ -285,8 +285,6 @@ class Behaviour():
                     td13PositiveFlag = False
                     td9NegativeFlag = False
                     td13NegativeFlag = False
-                    td1PositiveFlag = False
-                    td2PositiveFlag = False
 
                     td9PositiveFlag42B = False
                     td13PositiveFlag42B = False
@@ -296,7 +294,7 @@ class Behaviour():
                     td13NegativeFlag42B = False
                     if('td' in indicators):
                         td = indicators['td'][0]['result']['td'];
-                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag, td1PositiveFlag, td2PositiveFlag) = self.tdDeteminator(2, td)
+                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag) = self.tdDeteminator(2, td, False)
 
                         ###################################### 2B indicator
                         # This 2B is based on TD bottom point. It pick ups the 2B point near/at TD 9 point.
@@ -305,7 +303,7 @@ class Behaviour():
                         # valleyIndex = new_result[exchange][market_pair]['indicators']['valley_loc'][0]['result']['valley_loc']
 
                         #- bottom 2B for later use
-                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B, td1PostiveFlag42B, td2PositiveFlag42B) = self.tdDeteminator(3, td)
+                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B) = self.tdDeteminator(2, td, True)
 
                     ########################################## cci
                     isCciOver100 = (cci[len(cci) - 1] > 100) and (cci[len(cci) - 2] < 100)
@@ -433,9 +431,9 @@ class Behaviour():
                         #if (td2PositiveFlag):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 2位置", indicatorTypeCoinMap)
 
-                        if(isBottom3kFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "底部3k", indicatorTypeCoinMap)
-                            self.toDb("底部3k", exchange, market_pair)
+                        # if(isBottom3kFlag):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "底部3k", indicatorTypeCoinMap)
+                        #     self.toDb("底部3k", exchange, market_pair)
 
                         if (td9NegativeFlag):
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 9位置", indicatorTypeCoinMap)
@@ -445,11 +443,13 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 13位置", indicatorTypeCoinMap)
                             self.toDb("TD 底部 13位置", exchange, market_pair)
 
-                        #if (td9PositiveFlag):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 9位置", indicatorTypeCoinMap)
+                        if (td9PositiveFlag):
+                           self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 9位置", indicatorTypeCoinMap)
+                           self.toDb("TD 顶部 9位置", exchange, market_pair)
 
-                        #if (td13PositiveFlag):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TTD 顶部 13位置", indicatorTypeCoinMap)
+                        if (td13PositiveFlag):
+                           self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 13位置", indicatorTypeCoinMap)
+                           self.toDb("TD 顶部 13位置", exchange, market_pair)
 
                        # if(self.isBottom2B(volume, opened, close) and (hasMultipleBottomDivergence or hasBottomDivergence)) :
                        #     self.printResult(new_result, exchange, market_pair, output_mode, "背离+底部2B信号", indicatorTypeCoinMap)
@@ -461,9 +461,9 @@ class Behaviour():
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
 
-                        if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
-                            self.toDb("0轴上macd金叉信号", exchange, market_pair)
+                        # if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
+                        #     self.toDb("0轴上macd金叉信号", exchange, market_pair)
 
                         if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
                             self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
@@ -496,19 +496,12 @@ class Behaviour():
                             self.toDb("macd金叉信号 + DMI", exchange, market_pair)
 
                         if (
-                                ((low[len(low)-1] >= (1-0.05) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.05) * ema60[len(ema60)-1])
-                                or (low[len(low)-1] >= (1-0.05) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.05) * ema30[len(ema30)-1])
-                                or (close[len(close) - 1] >= (1 - 0.05) * ema60[len(ema60) - 1] and close[len(close) - 1] <= (
-                                         1 + 0.05) * ema60[len(ema60) - 1])
-                                 or (close[len(close) - 1] >= (1 - 0.05) * ema30[len(ema30) - 1] and close[len(close) - 1] <= (
-                                                1 + 0.05) * ema30[len(ema30) - 1])
+                                ((low[len(low)-1] >= (1-0.03) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.03) * ema60[len(ema60)-1])
                                 )
-                                and
-                                (close[len(close)-1] < opened[len(opened)-1])
-
                         ):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30/ema60",
+                            self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema60",
                                              indicatorTypeCoinMap)
+                            self.toDb("沾到ema60", exchange, market_pair)
 
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
@@ -589,13 +582,14 @@ class Behaviour():
         return (priceMatches2BPattern and volumeMatches2BPattern) \
                or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
 
-    def tdDeteminator(self, gap, td):
+    def tdDeteminator(self, gap, td, needtd8):
         td9PositiveFlag = False
         td9NegativeFlag = False
         td13PositiveFlag = False
         td13NegativeFlag = False
-        td1PositiveFlag = False
-        td2PositiveFlag = False
+
+        if (needtd8 and (td[len(td)-1] == -8)):
+            td9NegativeFlag = True;
 
         if (td[len(td) - gap] == 9):
             td9PositiveFlag = True;
@@ -609,13 +603,7 @@ class Behaviour():
         if (td[len(td) - gap] == -13):
             td13NegativeFlag = True;
 
-        if (td[len(td) - gap] == 1):
-            td1PositiveFlag = True;
-
-        if (td[len(td) - gap] == 2):
-            td2PositiveFlag = True;
-
-        return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag, td1PositiveFlag, td2PositiveFlag;
+        return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag;
 
     def isOverceedingTriangleLine(self, loc_ids, ohlcv):
         indexX1 = loc_ids[0]

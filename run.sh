@@ -96,6 +96,11 @@ for(( i=0;i<${#modes[@]};i++)); do
         python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a &
 
+        python3 app/app.py  ${modes[i]}/mexc_12h_custom.yml ${modes[i]}/mexc_12h.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/mexc_d_custom.yml ${modes[i]}/mexc_d.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/mexc_3d_custom.yml ${modes[i]}/mexc_3d.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/mexc_w_custom.yml ${modes[i]}/mexc_w.log ${modes[i]}  -a &
+
 #        python3 app/app.py  ${modes[i]}/hitbtc_d_${modes[i]}.yml ${modes[i]}/hitbtc_d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/hitbtc_w_${modes[i]}.yml ${modes[i]}/hitbtc_w.log ${modes[i]} -a &
 
