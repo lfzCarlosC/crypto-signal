@@ -3,7 +3,7 @@
 #activate conda env
 source ~/miniconda/bin/activate
 
-kill -9 `ps -ef | grep app.py | awk '{print $1}'`
+ps aux | grep app.py | awk '{print $2}' | xargs kill -9
 
 #update username locally
 #find custom/*.yml -type f -exec sed -i '' -e "s/lfz.carlos/cryptalsender/" {} \;
@@ -89,7 +89,7 @@ for(( i=0;i<${#modes[@]};i++)); do
     then
 #        python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
-#        python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a &
 
@@ -119,7 +119,7 @@ for(( i=0;i<${#modes[@]};i++)); do
 #        python3 app/app.py  ${modes[i]}/huobi_w_${modes[i]}.yml ${modes[i]}/huobi_w.log ${modes[i]} -a &
 
 #        python3 app/app.py  ${modes[i]}/okex_4h_${modes[i]}.yml ${modes[i]}/okex_4h.log ${modes[i]} -a &
-#        python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a &
+        python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a &
         python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a &

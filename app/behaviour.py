@@ -184,7 +184,13 @@ class Behaviour():
         elif marketPairFlag == 'btc':
             return (market_pair.lower().endswith("btc")) \
                and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h','12h', '1d', '3d', '1w']);
+    
+    def postProcessPair(self, market_pair):
+        if ':' in market_pair:
+            return market_pair.split('/')[0] + '/' + market_pair.split(':')[-1]
 
+        return market_pair
+                
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
         
@@ -206,6 +212,8 @@ class Behaviour():
                 new_result[exchange] = dict()
             
             for market_pair in market_data[exchange]:
+
+                market_pair = self.postProcessPair(market_pair);
 
                 if not (self.detectCoinPairs(market_pair, marketPairFlag)):
                     continue;
@@ -294,7 +302,7 @@ class Behaviour():
                     td13NegativeFlag42B = False
                     if('td' in indicators):
                         td = indicators['td'][0]['result']['td'];
-                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag) = self.tdDeteminator(2, td, False)
+                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag) = self.tdDeteminator(td, False)
 
                         ###################################### 2B indicator
                         # This 2B is based on TD bottom point. It pick ups the 2B point near/at TD 9 point.
@@ -303,7 +311,7 @@ class Behaviour():
                         # valleyIndex = new_result[exchange][market_pair]['indicators']['valley_loc'][0]['result']['valley_loc']
 
                         #- bottom 2B for later use
-                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B) = self.tdDeteminator(2, td, True)
+                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B) = self.tdDeteminator(td, True)
 
                     ########################################## cci
                     isCciOver100 = (cci[len(cci) - 1] > 100) and (cci[len(cci) - 2] < 100)
@@ -461,9 +469,9 @@ class Behaviour():
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
 
-                        # if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
-                        #     self.toDb("0轴上macd金叉信号", exchange, market_pair)
+                        if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
+                            self.toDb("0轴上macd金叉信号", exchange, market_pair)
 
                         if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
                             self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
@@ -502,6 +510,14 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema60",
                                              indicatorTypeCoinMap)
                             self.toDb("沾到ema60", exchange, market_pair)
+
+                        if (
+                                ((low[len(low)-1] >= (1-0.03) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.03) * ema30[len(ema30)-1])
+                                )
+                        ):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30",
+                                             indicatorTypeCoinMap)
+                            self.toDb("沾到ema30", exchange, market_pair)
 
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
@@ -582,25 +598,22 @@ class Behaviour():
         return (priceMatches2BPattern and volumeMatches2BPattern) \
                or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
 
-    def tdDeteminator(self, gap, td, needtd8):
+    def tdDeteminator(self, td, needtd8):
         td9PositiveFlag = False
         td9NegativeFlag = False
         td13PositiveFlag = False
         td13NegativeFlag = False
 
-        if (needtd8 and (td[len(td)-1] == -8)):
-            td9NegativeFlag = True;
-
-        if (td[len(td) - gap] == 9):
+        if ((td[len(td) - 1] == 9) or (td[len(td) - 2] == 9)):
             td9PositiveFlag = True;
 
-        if (td[len(td) - gap] == -9):
+        if ((td[len(td) - 1] == -9) or (td[len(td) - 2] == -9)):
             td9NegativeFlag = True;
 
-        if (td[len(td) - gap] == 13):
+        if ((td[len(td) - 1] == 13) or (td[len(td) - 2] == 13)):
             td13PositiveFlag = True;
 
-        if (td[len(td) - gap] == -13):
+        if ((td[len(td) - 1] == -13) or (td[len(td) - 2] == -13)):
             td13NegativeFlag = True;
 
         return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag;
