@@ -55,10 +55,11 @@ class Configuration():
         else:
             self.exchanges = dict()
 
-        for exchange in ccxt.exchanges:
-            if exchange not in self.exchanges:
-                self.exchanges[exchange] = {
-                    'required': {
-                        'enabled': False
+        if 'A股' not in self.exchanges:
+            for exchange in ccxt.exchanges:
+                if exchange not in self.exchanges:
+                    self.exchanges[exchange] = {
+                        'required': {
+                            'enabled': False
                     }
                 }

@@ -103,10 +103,10 @@ class Behaviour():
             market_pairs = None
 
         market_data = self.exchange_interface.get_exchange_markets(markets = market_pairs)
-
+        
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
         exchange = list(market_data.keys())[0]
-        
+
         (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
         if sys.argv[5:]:
             if (sys.argv[5] == '_get_indicator_data'):
@@ -177,12 +177,12 @@ class Behaviour():
                 f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
         f.close();
 
-    def detectCoinPairs(self, market_pair, marketPairFlag):
-        if marketPairFlag == 'usd':
-            return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd")) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h','12h', '1d', '3d', '1w']);
-        elif marketPairFlag == 'btc':
-            return (market_pair.lower().endswith("btc")) \
+    def detectCoinPairs(self, exchange, market_pair, marketPairFlag):
+        if exchange == 'A股':
+            return True;
+
+        if marketPairFlag == 'usd/btc':
+            return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") or (market_pair.lower().endswith("btc"))) \
                and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h','12h', '1d', '3d', '1w']);
     
     def postProcessPair(self, market_pair):
@@ -202,20 +202,20 @@ class Behaviour():
         if len(sys.argv) > 5:
             marketPairFlag = sys.argv[5]
         else:
-            marketPairFlag = 'usd'
+            marketPairFlag = 'usd/btc'
 
         indicatorModes = sys.argv[3]
         indicatorTypeCoinMap = defaultdict(list)
         new_result = dict()
+
         for exchange in market_data:
             if exchange not in new_result:
                 new_result[exchange] = dict()
-            
-            for market_pair in market_data[exchange]:
 
+            for market_pair in market_data[exchange]:
                 market_pair = self.postProcessPair(market_pair);
 
-                if not (self.detectCoinPairs(market_pair, marketPairFlag)):
+                if not (self.detectCoinPairs(exchange, market_pair, marketPairFlag)):
                     continue;
 
                 if market_pair not in new_result[exchange]:
@@ -237,7 +237,6 @@ class Behaviour():
 
                 ################################# Indicator data retrieving and strategy
                 try:
-
                     ohlcv = new_result[exchange][market_pair]['informants']['ohlcv'][0]['result']
 
                     upperband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['upperband'] ;
@@ -258,7 +257,7 @@ class Behaviour():
                     macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macd'];  #white line
                     macd_signal = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdsignal']; #yellow line
                     delta_macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdhist']; #macd volume
-
+                
                     # rsi = new_result[exchange][market_pair]['indicators']['rsi'][0]['result']['rsi'];
                     # stoch_slow_k = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_k'];
                     # stoch_slow_d = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_d'];
@@ -303,7 +302,6 @@ class Behaviour():
                     if('td' in indicators):
                         td = indicators['td'][0]['result']['td'];
                         (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag) = self.tdDeteminator(td, False)
-
                         ###################################### 2B indicator
                         # This 2B is based on TD bottom point. It pick ups the 2B point near/at TD 9 point.
                         # argrelextrema is not very useful due to massive but not distinguished valley points.
@@ -318,6 +316,8 @@ class Behaviour():
 
                     ########################################## goldenMacdFork
                     intersectionValueAndMin = [0, 0]
+
+                    goldenForkMacd = None
                     if not (len(macd) == 0 \
                             or len(macd_signal) == 0 \
                             or len(delta_macd) == 0):
@@ -387,21 +387,6 @@ class Behaviour():
                     ########################################### detectMacdVolumeIsShrinked
                     # detectMacdVolumeIsShrinked = self.detectMacdVolumeShrinked(delta_macd, self.detectFirstMacdPositiveSlotPosition(delta_macd))
 
-                    ########################################### stochrsi
-                    # len_sd = len(stoch_slow_d)
-                    # len_sk = len(stoch_slow_k)
-                    # stochrsi_goldenfork = (
-                    #     (stoch_slow_d[len_sd-2] >= stoch_slow_k[len_sk-2])
-                    #     and
-                    #     (stoch_slow_d[len_sd-1] <= stoch_slow_k[len_sk-1])
-                    # )
-                    #
-                    # stochrsi_deadfork = (
-                    #     (stoch_slow_d[len_sd - 2] <= stoch_slow_k[len_sk - 2])
-                    #     and
-                    #     (stoch_slow_d[len_sd - 1] >= stoch_slow_k[len_sk - 1])
-                    # )
-
                     ########################################## volume is 3 times greater than before
                     # len_volume = len(volume)
                     # volumeIsGreater = volume[len_volume-1] >= 3 * volume[len_volume-2]
@@ -413,7 +398,6 @@ class Behaviour():
                     positiveFlag = self.lastNDataIsPositive(delta_macd, 10);
                     if(positiveFlag):
                         variance, mean, max = self.getVariance(delta_macd, 10);
-                        # print(market_pair + "===" + str(variance) + "===" + str(mean) + "===" + str(max))
                         flatPositive = self.lastNDataIsPositive(delta_macd, 10) and (variance <= 0.01) and (mean/max <= 0.2)
 
                     #narrowedBoll
@@ -475,6 +459,16 @@ class Behaviour():
 
                         if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
                             self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
+                            self.toDb("DMI+", exchange, market_pair)
+
+                        if (self.isBottomPinBar(low, high, close, opened)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "底部pin bar", indicatorTypeCoinMap)
+                            self.toDb("底部pin bar", exchange, market_pair)
+
+                        if (self.isTopPinBar(low, high, close, opened)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "顶部pin bar", indicatorTypeCoinMap)
+                            self.toDb("顶部pin bar", exchange, market_pair)
+
                         #
                         # if (ema7IsOverEma65):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿65日ema线", indicatorTypeCoinMap)
@@ -490,7 +484,7 @@ class Behaviour():
 
                         # if (flatPositive):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd正值平滑", indicatorTypeCoinMap)
-
+#================================================
                         (start, end) = self.detectMacdSlots(delta_macd, 0, 'positive')
                         if (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[
                             self.getIndexOfMacdValley(delta_macd, start, end)])):
@@ -498,10 +492,10 @@ class Behaviour():
                                              indicatorTypeCoinMap)
                             self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
 
-                        if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[self.getIndexOfMacdValley(delta_macd, start, end)]))):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
-                                             indicatorTypeCoinMap)
-                            self.toDb("macd金叉信号 + DMI", exchange, market_pair)
+                        # if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[self.getIndexOfMacdValley(delta_macd, start, end)]))):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
+                        #                      indicatorTypeCoinMap)
+                        #     self.toDb("macd金叉信号 + DMI", exchange, market_pair)
 
                         if (
                                 ((low[len(low)-1] >= (1-0.03) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.03) * ema60[len(ema60)-1])
@@ -518,7 +512,7 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30",
                                              indicatorTypeCoinMap)
                             self.toDb("沾到ema30", exchange, market_pair)
-
+#================================================
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
 
@@ -574,6 +568,20 @@ class Behaviour():
 
         return (indicatorTypeCoinMap, new_result);
 
+    def isBottomPinBar(self, low, high, close, opened):
+        line = np.min([opened[len(opened)-1], close[len(close)-1]]) - low[len(low)-1]
+        volume = 2.2 * np.abs(opened[len(opened)-1] - close[len(close)-1])
+        centerVolume = (opened[len(opened)-1] + close[len(close)-1])/2
+        centerLine = (high[len(high)-1] + low[len(low)-1])/2
+        return (line > volume) and (centerVolume > centerLine)
+
+    def isTopPinBar(self, low, high, close, opened):
+        line = high[len(high)-1] - np.max([opened[len(opened)-1], close[len(close)-1]])
+        volume = 2.2 * np.abs(opened[len(opened)-1] - close[len(close)-1])
+        centerVolume = (opened[len(opened)-1] + close[len(close)-1])/2
+        centerLine = (high[len(high)-1] + low[len(low)-1])/2
+        return (line > volume) and (centerVolume < centerLine)
+
     #3k线判别
     def isBottom3k(self, low, high):  
         #low[0] > low[-1], low[-2] > low[-1], high[0] > high[-2]
@@ -604,16 +612,16 @@ class Behaviour():
         td13PositiveFlag = False
         td13NegativeFlag = False
 
-        if ((td[len(td) - 1] == 9) or (td[len(td) - 2] == 9)):
+        if ((td[len(td) - 1] in (9,9.0)) or (td[len(td) - 2] in (9,9.0))):
             td9PositiveFlag = True;
 
-        if ((td[len(td) - 1] == -9) or (td[len(td) - 2] == -9)):
+        if ((td[len(td) - 1] in (-9,-9.0)) or (td[len(td) - 2] in (-9,-9.0))):
             td9NegativeFlag = True;
 
-        if ((td[len(td) - 1] == 13) or (td[len(td) - 2] == 13)):
+        if ((td[len(td) - 1] in (13, 13.0)) or (td[len(td) - 2] in (13, 13.0))):
             td13PositiveFlag = True;
 
-        if ((td[len(td) - 1] == -13) or (td[len(td) - 2] == -13)):
+        if ((td[len(td) - 1] in (-13, -13.0)) or (td[len(td) - 2] in (-13, -13.0))):
             td13NegativeFlag = True;
 
         return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag;
@@ -969,7 +977,7 @@ class Behaviour():
         print(
                                 exchange,
                                 criteriaType,
-                                self.output[output_mode](output_data, criteriaType, market_pair, exchange, indicatorTypeCoinMap),
+                                self.output[output_mode](output_data, criteriaType, self.exchange_interface.get_name_by_market_pair(market_pair), exchange, indicatorTypeCoinMap),
                                 end=''
             )
 
@@ -979,8 +987,8 @@ class Behaviour():
               "select distinct %s,%s,%s,%s,%s from dual where not exists( select 1 from td " \
               "where td_name = %s and market_pair = %s and candle_period = %s and exchange = %s " \
               "and create_date >= date_sub(%s, interval 10 day) and create_date <= %s)"
-        val = (td_name, market_pair, candle_period, exchange, date.today(),
-               td_name, market_pair, candle_period, exchange, date.today(), date.today())
+        val = (td_name, self.exchange_interface.get_name_by_market_pair(market_pair), candle_period, exchange, date.today(),
+               td_name, self.exchange_interface.get_name_by_market_pair(market_pair), candle_period, exchange, date.today(), date.today())
         Behaviour.mydb.cursor().execute(sql, val)
         Behaviour.mydb.commit()  # 数据表内容有更新，必须使用到该语句
         print(Behaviour.mydb.cursor().rowcount, "记录插入成功。")
@@ -1082,7 +1090,7 @@ class Behaviour():
                         exchange,
                         candle_period
                     )
-
+                
                 if historical_data_cache[candle_period]:
                     analysis_args = {
                         'historical_data': historical_data_cache[candle_period],
@@ -1215,7 +1223,6 @@ class Behaviour():
         Returns:
             list: A list of OHLCV data.
         """
-
         historical_data = list()
         try:
             historical_data = self.exchange_interface.get_historical_data(

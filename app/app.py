@@ -11,6 +11,8 @@ import structlog
 
 from conf import Configuration
 from exchange import ExchangeInterface
+from exchange_cryptal import CryptalExchangeInterface
+from exchange_ashare import AshareExchangeInterface
 from notification import Notifier
 from behaviour import Behaviour
 
@@ -26,7 +28,8 @@ def main():
     logger = structlog.get_logger()
 
     # Configure and run configured behaviour.
-    exchange_interface = ExchangeInterface(config.exchanges)
+    exchange_interface = AshareExchangeInterface(config.exchanges) if 'A股' in config.exchanges else CryptalExchangeInterface(config.exchanges)
+
     notifier = Notifier(config.notifiers)
 
     behaviour = Behaviour(
