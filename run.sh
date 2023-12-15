@@ -101,6 +101,15 @@ for(( i=0;i<${#modes[@]};i++)); do
         python3 app/app.py  ${modes[i]}/mexc_3d_custom.yml ${modes[i]}/mexc_3d.log ${modes[i]}  -a &
         python3 app/app.py  ${modes[i]}/mexc_w_custom.yml ${modes[i]}/mexc_w.log ${modes[i]}  -a &
 
+        python3 app/app.py  ${modes[i]}/bitget_12h_custom.yml ${modes[i]}/bitget_12h.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/bitget_d_custom.yml ${modes[i]}/bitget_d.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/bitget_3d_custom.yml ${modes[i]}/bitget_3d.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/bitget_w_custom.yml ${modes[i]}/bitget_w.log ${modes[i]}  -a &
+
+        python3 app/app.py  ${modes[i]}/gate_8h_custom.yml ${modes[i]}/gate_8h.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/gate_d_custom.yml ${modes[i]}/gate_d.log ${modes[i]}  -a &
+        python3 app/app.py  ${modes[i]}/gate_w_custom.yml ${modes[i]}/gate_w.log ${modes[i]}  -a &
+
 #        python3 app/app.py  ${modes[i]}/hitbtc_d_${modes[i]}.yml ${modes[i]}/hitbtc_d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/hitbtc_w_${modes[i]}.yml ${modes[i]}/hitbtc_w.log ${modes[i]} -a &
 
