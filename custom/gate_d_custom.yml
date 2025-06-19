@@ -5,7 +5,7 @@ crossovers:
     enabled: true, key_indicator: ohlcv, key_indicator_index: 0, key_indicator_type: informants,
     key_signal: close}
 exchanges:
-  binance:
+  gate:
     required: {enabled: true}
 indicators:
   adx:
@@ -254,6 +254,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: []
+  market_pairs: [ALGO/USDT]
   output_mode: cli
   update_interval: 86400

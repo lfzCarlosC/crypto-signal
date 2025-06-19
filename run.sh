@@ -1,7 +1,7 @@
 . ~/.bash_profile
 
 #activate conda env
-source ~/miniconda/bin/activate
+source ~/miniconda3/bin/activate
 
 ps aux | grep app.py | awk '{print $2}' | xargs kill -9
 
@@ -88,28 +88,25 @@ for(( i=0;i<${#modes[@]};i++)); do
     if [ "$runpackage"  == "y" ]
     then
 #        python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a &
+        # python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
+        nohup python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
 
-        python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a &
+        #python3 app/app.py  ${modes[i]}/mexc_12h_custom.yml ${modes[i]}/mexc_12h.log ${modes[i]}  -a &
+        #python3 app/app.py  ${modes[i]}/mexc_d_custom.yml ${modes[i]}/mexc_d.log ${modes[i]}  -a &
+        #python3 app/app.py  ${modes[i]}/mexc_3d_custom.yml ${modes[i]}/mexc_3d.log ${modes[i]}  -a &
+        #python3 app/app.py  ${modes[i]}/mexc_w_custom.yml ${modes[i]}/mexc_w.log ${modes[i]}  -a &
 
-        python3 app/app.py  ${modes[i]}/mexc_12h_custom.yml ${modes[i]}/mexc_12h.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/mexc_d_custom.yml ${modes[i]}/mexc_d.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/mexc_3d_custom.yml ${modes[i]}/mexc_3d.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/mexc_w_custom.yml ${modes[i]}/mexc_w.log ${modes[i]}  -a &
+        nohup python3 app/app.py  ${modes[i]}/bitget_12h_custom.yml ${modes[i]}/bitget_12h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup  python3 app/app.py  ${modes[i]}/bitget_d_custom.yml ${modes[i]}/bitget_d.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_6h_custom.yml ${modes[i]}/bitget_6h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_3d_custom.yml ${modes[i]}/bitget_3d.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_w_custom.yml ${modes[i]}/bitget_w.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
 
-        python3 app/app.py  ${modes[i]}/bitget_12h_custom.yml ${modes[i]}/bitget_12h.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/bitget_d_custom.yml ${modes[i]}/bitget_d.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/bitget_3d_custom.yml ${modes[i]}/bitget_3d.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/bitget_w_custom.yml ${modes[i]}/bitget_w.log ${modes[i]}  -a &
-
-        python3 app/app.py  ${modes[i]}/gate_8h_custom.yml ${modes[i]}/gate_8h.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/gate_d_custom.yml ${modes[i]}/gate_d.log ${modes[i]}  -a &
-        python3 app/app.py  ${modes[i]}/gate_w_custom.yml ${modes[i]}/gate_w.log ${modes[i]}  -a &
-
+ #       python3 app/app.py  ${modes[i]}/gate_w_custom.yml ${modes[i]}/gate_w.log ${modes[i]}  -a &
 #        python3 app/app.py  ${modes[i]}/hitbtc_d_${modes[i]}.yml ${modes[i]}/hitbtc_d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/hitbtc_w_${modes[i]}.yml ${modes[i]}/hitbtc_w.log ${modes[i]} -a &
 
@@ -128,15 +125,15 @@ for(( i=0;i<${#modes[@]};i++)); do
 #        python3 app/app.py  ${modes[i]}/huobi_w_${modes[i]}.yml ${modes[i]}/huobi_w.log ${modes[i]} -a &
 
 #        python3 app/app.py  ${modes[i]}/okex_4h_${modes[i]}.yml ${modes[i]}/okex_4h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a &
+        nohup python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
 
-#   python3 app/app.py  ${modes[i]}/gateio_4h_${modes[i]}.yml ${modes[i]}/gateio_4h.log ${modes[i]} -a &
-#        python3 app/app.py  ${modes[i]}/gateio_6h_${modes[i]}.yml ${modes[i]}/gateio_6h.log ${modes[i]} -a &
-#python3 app/app.py  ${modes[i]}/gateio_12h_${modes[i]}.yml ${modes[i]}/gateio_12h.log ${modes[i]} -a &
-#python3 app/app.py  ${modes[i]}/gateio_w_${modes[i]}.yml ${modes[i]}/gateio_w.log ${modes[i]} -a &
+        #python3 app/app.py  ${modes[i]}/gateio_4h_${modes[i]}.yml ${modes[i]}/gateio_4h.log ${modes[i]} -a &
+        #python3 app/app.py  ${modes[i]}/gateio_6h_${modes[i]}.yml ${modes[i]}/gateio_6h.log ${modes[i]} -a &
+        #python3 app/app.py  ${modes[i]}/gateio_12h_${modes[i]}.yml ${modes[i]}/gateio_12h.log ${modes[i]} -a &
+        #python3 app/app.py  ${modes[i]}/gateio_w_${modes[i]}.yml ${modes[i]}/gateio_w.log ${modes[i]} -a &
 
 #    python3 app/app.py  ${modes[i]}/kucoin_1h_${modes[i]}.yml ${modes[i]}/kucoin_1h.log ${modes[i]} -a &
 #    python3 app/app.py  ${modes[i]}/kucoin_4h_${modes[i]}.yml ${modes[i]}/kucoin_4h.log ${modes[i]} -a &

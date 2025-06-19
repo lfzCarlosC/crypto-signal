@@ -256,4 +256,5 @@ settings:
   log_mode: text
   market_pairs: [ALGO/USDT]
   output_mode: cli
-  update_interval: 86400
+  update_interval: 259200
+  

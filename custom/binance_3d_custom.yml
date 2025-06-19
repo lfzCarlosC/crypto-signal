@@ -236,4 +236,4 @@ settings:
   log_mode: text
   market_pairs: []
   output_mode: cli
-  update_interval: 259300
+  update_interval: 259200

@@ -254,6 +254,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [ALGO/USDT]
+  market_pairs: []
   output_mode: cli
   update_interval: 86400
