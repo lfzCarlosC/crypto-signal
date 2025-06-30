@@ -8,6 +8,7 @@ from copy import deepcopy
 import redis
 import structlog
 from ccxt import ExchangeError
+import ccxt
 from tenacity import RetryError
 
 from analysis import StrategyAnalyzer
@@ -182,8 +183,8 @@ class Behaviour():
             return True;
 
         if marketPairFlag == 'usd/btc':
-            return (market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") or (market_pair.lower().endswith("btc"))) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h','12h', '1d', '3d', '1w']);
+            return ( market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") ) \
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w']);
     
     def postProcessPair(self, market_pair):
         if ':' in market_pair:
@@ -333,16 +334,6 @@ class Behaviour():
                                 delta_macd[len(delta_macd) - 2] >= 0) and (delta_macd[len(delta_macd) - 1] >= (
                                 delta_macd[len(delta_macd) - 2] * 3))
 
-                    ############################################## deadForkMacd
-                    # deadForkMacd = (
-                    #     delta_macd[len(delta_macd) - 1] <= 0 and delta_macd[len(delta_macd) - 2] >= 0
-                    # )
-                    #
-                    # macdVolumeMinusIsDecreased = False
-                    # (macdVolumeMinus,min) = self.lastNMinusMacdVolume(delta_macd[0:len(delta_macd)-1])
-                    # if( len(macdVolumeMinus) != 0 and self.lastNMinusDecreased(macdVolumeMinus,min) ):
-                    #     macdVolumeMinusIsDecreased = True
-
                     ############################################## goldenForkKdj
                     len_k = len(kt)
                     len_d = len(dt)
@@ -352,13 +343,6 @@ class Behaviour():
                         and
                         ((dt[len_d-1] <= kt[len_k-1]) and (kt[len_k-1] <= jt[len_j-1]))
                     )
-
-                    ############################################# deadForkKdj
-                    # deadForkKdj = (
-                    #     ((dt[len_d - 2] <= kt[len_k - 2]) and (kt[len_k - 2] <= jt[len_j - 2]))
-                    #     and
-                    #     ((dt[len_d - 1] >= kt[len_k - 1]) and (kt[len_k - 1] >= jt[len_j - 1]))
-                    # )
 
                     ############################################# dmi
                     lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
@@ -370,26 +354,6 @@ class Behaviour():
                     hasPeakDivergence = self.detectPeakDivergence(delta_macd, high, macd_signal)
                     hasMultipleBottomDivergence = self.detectMultipleBottomDivergence(delta_macd, low, macd_signal)
                     hasMultiplePeakDivergnce = self.detectMultiplePeakDivergence(delta_macd, high, macd_signal)
-
-                    ############################################# bollCross
-                    # bollCross = False
-                    # if (len(middleband) != 0):
-                    #     delta_close_middleband = close - middleband;
-                    #     delta_low_middleband = low - middleband;
-                    #     if ((delta_close_middleband.iloc[-1] > 0 and delta_low_middleband.iloc[-1] < 0) or
-                    #         (delta_close_middleband.iloc[-2] > 0 and delta_low_middleband.iloc[-2] < 0)
-                    #         ):
-                    #         bollCross = True
-
-                    ########################################### rsi < 30
-                    # rsiIsLessThan30 = (rsi[len(rsi)-1] <= 30)
-
-                    ########################################### detectMacdVolumeIsShrinked
-                    # detectMacdVolumeIsShrinked = self.detectMacdVolumeShrinked(delta_macd, self.detectFirstMacdPositiveSlotPosition(delta_macd))
-
-                    ########################################## volume is 3 times greater than before
-                    # len_volume = len(volume)
-                    # volumeIsGreater = volume[len_volume-1] >= 3 * volume[len_volume-2]
 
                     ############################################ macd正值平滑
                     #c(macd+)>5 + D<0.1
@@ -407,6 +371,8 @@ class Behaviour():
 
                     isBottom3kFlag = self.isBottom3k(low, high)
 
+
+#=============================================signal rendering=============================================
                     if(indicatorModes == 'custom'):
 
                         # if(self.isOverceedingTriangleLine(peakLoc, ohlcv)):
@@ -461,26 +427,13 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
                             self.toDb("DMI+", exchange, market_pair)
 
-                        if (self.isBottomPinBar(low, high, close, opened)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "底部pin bar", indicatorTypeCoinMap)
-                            self.toDb("底部pin bar", exchange, market_pair)
+                        # if (self.isBottomPinBar(low, high, close, opened)):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "底部pin bar", indicatorTypeCoinMap)
+                        #     self.toDb("底部pin bar", exchange, market_pair)
 
-                        if (self.isTopPinBar(low, high, close, opened)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "顶部pin bar", indicatorTypeCoinMap)
-                            self.toDb("顶部pin bar", exchange, market_pair)
-
-                        #
-                        # if (ema7IsOverEma65):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿65日ema线", indicatorTypeCoinMap)
-                        #
-                        # if (ema7IsOverEma22):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿22日ema线", indicatorTypeCoinMap)
-                        #
-                        # if (ema7IsOverEma33):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "7日线上穿33日ema线", indicatorTypeCoinMap)
-                        #
-                        # if (candleIsOverEma):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "k线上穿33日ema线", indicatorTypeCoinMap)
+                        # if (self.isTopPinBar(low, high, close, opened)):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "顶部pin bar", indicatorTypeCoinMap)
+                        #     self.toDb("顶部pin bar", exchange, market_pair)
 
                         # if (flatPositive):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd正值平滑", indicatorTypeCoinMap)
@@ -497,21 +450,21 @@ class Behaviour():
                         #                      indicatorTypeCoinMap)
                         #     self.toDb("macd金叉信号 + DMI", exchange, market_pair)
 
-                        if (
-                                ((low[len(low)-1] >= (1-0.03) * ema60[len(ema60)-1] and low[len(low)-1] <= (1+0.03) * ema60[len(ema60)-1])
-                                )
-                        ):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema60",
-                                             indicatorTypeCoinMap)
-                            self.toDb("沾到ema60", exchange, market_pair)
+                        # if (
+                        #         ((close[len(close)-1] > opened[len(opened)-1]) and (high[len(high)-1] > ema60[len(ema60)-1]) and (low[len(low)-1] < ema60[len(ema60)-1])
+                        #         )
+                        # ):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema60",
+                        #                      indicatorTypeCoinMap)
+                        #     self.toDb("沾到ema60", exchange, market_pair)
 
-                        if (
-                                ((low[len(low)-1] >= (1-0.03) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.03) * ema30[len(ema30)-1])
-                                )
-                        ):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30",
-                                             indicatorTypeCoinMap)
-                            self.toDb("沾到ema30", exchange, market_pair)
+                        # if (
+                        #         ((low[len(low)-1] >= (1-0.03) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.03) * ema30[len(ema30)-1])
+                        #         )
+                        # ):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30",
+                        #                      indicatorTypeCoinMap)
+                        #     self.toDb("沾到ema30", exchange, market_pair)
 #================================================
                         # if (goldenForkMacd and stochrsi_goldenfork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
@@ -525,11 +478,11 @@ class Behaviour():
                         # if (goldenForkKdj and goldenForkMacd):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + macd金叉信号", indicatorTypeCoinMap)
 
-                        if (goldenForkMacd):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号", indicatorTypeCoinMap)
+                        # if (goldenForkMacd):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号", indicatorTypeCoinMap)
 
-                        if (goldenForkKdj):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号", indicatorTypeCoinMap)
+                        # if (goldenForkKdj):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号", indicatorTypeCoinMap)
 
                         # if (goldenForkKdj and lastNDMIIsPositiveFork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + DMI", indicatorTypeCoinMap)
@@ -560,6 +513,12 @@ class Behaviour():
                         if (isCciOver100):
                             self.printResult(new_result, exchange, market_pair, output_mode, "cci over 100", indicatorTypeCoinMap)
                             self.toDb("cci over 100", exchange, market_pair)
+                        
+
+                        if (self.isCrabPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "螃蟹形态", indicatorTypeCoinMap)
+                            self.toDb("螃蟹形态", exchange, market_pair)
+
 ######################################################
                 except Exception as e:
                     print("An exception occurred for " + market_pair + ":" + exchange)
@@ -567,6 +526,94 @@ class Behaviour():
                     traceback.print_exc()
 
         return (indicatorTypeCoinMap, new_result);
+
+
+    def pine_zigzag(self, high, low, length=5, deviation=0.03, max_size=10):
+        pivots = []
+        direction = 0
+        last_pivot_index = None
+        last_pivot_price = None
+
+        for i in range(length, len(high) - length):
+            cur_high = high[i]
+            cur_low = low[i]
+            is_high = all(cur_high >= high[i - length:i + length + 1])
+            is_low = all(cur_low <= low[i - length:i + length + 1])
+
+            if not is_high and not is_low:
+                continue
+
+            cur_dir = 1 if is_high else -1
+            cur_price = cur_high if is_high else cur_low
+
+            if direction == 0:
+                pivots.append((i, cur_price, cur_dir))
+                direction = -cur_dir
+                last_pivot_index = i
+                last_pivot_price = cur_price
+            elif cur_dir == direction:
+                price_diff = abs(cur_price - last_pivot_price)
+                if price_diff >= deviation * abs(last_pivot_price):
+                    pivots.append((i, cur_price, cur_dir))
+                    direction = -direction
+                    last_pivot_index = i
+                    last_pivot_price = cur_price
+
+        # 保留最后的 max_size 个点
+        if len(pivots) > max_size:
+            pivots = pivots[-max_size:]
+
+        indices, prices, dirs = zip(*pivots) if pivots else ([], [], [])
+
+        # 每段的比率
+        def ratio(p1, p2):
+            return abs(p2 - p1) / abs(p1) if p1 != 0 else 0
+
+        ratios = []
+        for i in range(1, len(prices)):
+            ratios.append(round(ratio(prices[i - 1], prices[i]), 3))
+
+        return list(indices), list(prices), list(dirs), ratios
+
+    def get_harmonic_ratios_from_prices(self, prices):
+        if len(prices) < 5:
+            return (0, 0, 0, 0)
+
+        x, a, b, c, d = prices[-5:]
+
+        def safe_ratio(numer, denom):
+            return abs(numer) / abs(denom) if denom != 0 else 0
+
+        xab = safe_ratio(b - a, a - x)
+        abc = safe_ratio(c - b, b - a)
+        bcd = safe_ratio(d - c, c - b)
+        xad = safe_ratio(d - a, a - x)
+
+        return xab, abc, bcd, xad
+
+    def isCrabPattern(self, opened, close, low, high, error_percent=5):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        
+        _, prices, _, _ = self.pine_zigzag(high, low, length=10, deviation=0.05, max_size=10)
+
+        print(prices)
+        if len(prices) < 5:
+            return False
+
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+
+        print("xab:", xab)
+        print("abc:", abc)
+        print("bcd:", bcd)
+        print("xad:", xad)
+
+        if (xab >= 0.382 * err_min and xab <= 0.618 * err_max and
+            abc >= 0.382 * err_min and abc <= 0.886 * err_max and
+            (bcd >= 2.24 * err_min and bcd <= 3.618 * err_max or
+            xad >= 1.618 * err_min and xad <= 1.618 * err_max)):
+            return True
+        return False
 
     def isBottomPinBar(self, low, high, close, opened):
         line = np.min([opened[len(opened)-1], close[len(close)-1]]) - low[len(low)-1]
