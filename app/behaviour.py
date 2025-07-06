@@ -199,7 +199,7 @@ class Behaviour():
             market_data (dict): A dictionary containing the market data of the symbols to analyze.
             output_mode (str): Which console output mode to use.
         """
- 
+
         if len(sys.argv) > 5:
             marketPairFlag = sys.argv[5]
         else:
@@ -221,7 +221,7 @@ class Behaviour():
 
                 if market_pair not in new_result[exchange]:
                     new_result[exchange][market_pair] = dict()
-
+                
                 """
                 set olhcv data
                 a bad implementation: this should be performed concurrently
@@ -513,11 +513,38 @@ class Behaviour():
                         if (isCciOver100):
                             self.printResult(new_result, exchange, market_pair, output_mode, "cci over 100", indicatorTypeCoinMap)
                             self.toDb("cci over 100", exchange, market_pair)
-                        
-
+                    
                         if (self.isCrabPattern(opened, close, low, high)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "螃蟹形态", indicatorTypeCoinMap)
                             self.toDb("螃蟹形态", exchange, market_pair)
+                        
+                        if (self.isButterflyPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "蝴蝶形态", indicatorTypeCoinMap)
+                            self.toDb("蝴蝶形态", exchange, market_pair)
+
+                        if (self.isBatPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "蝙蝠形态", indicatorTypeCoinMap)
+                            self.toDb("蝙蝠形态", exchange, market_pair)
+
+                        if (self.isGartleyPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "加特利形态", indicatorTypeCoinMap)
+                            self.toDb("加特利形态", exchange, market_pair)
+
+                        if (self.isSharkPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "鲨鱼形态", indicatorTypeCoinMap)
+                            self.toDb("鲨鱼形态", exchange, market_pair)
+
+                        if (self.isCypherPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "Cypher形态", indicatorTypeCoinMap)
+                            self.toDb("Cypher形态", exchange, market_pair)
+
+                        # if (self.isThreeDrivesPattern(opened, close, low, high)):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "ThreeDrives形态", indicatorTypeCoinMap)
+                        #     self.toDb("ThreeDrives形态", exchange, market_pair)
+
+                        # if (self.isFiveZeroPattern(opened, close, low, high)):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "5-0形态", indicatorTypeCoinMap)
+                        #     self.toDb("5-0形态", exchange, market_pair)
 
 ######################################################
                 except Exception as e:
@@ -527,62 +554,115 @@ class Behaviour():
 
         return (indicatorTypeCoinMap, new_result);
 
+    def pine_zigzag_exact(self, high, low, length=10, deviation=0, max_size=20):
+        n = len(high)
+        pivots = [0] * n
+        dir_arr = [0] * n
+        
+        # 1. 计算pivots和dir（只看过去length个bar）
+        for i in range(length, n - length):
+            ph = high[i] == max(high[i-length:i+1])
+            pl = low[i] == min(low[i-length:i+1])
+            
+            if ph and not pl:
+                pivots[i] = 1
+                dir_arr[i] = 1
+            elif pl and not ph:
+                pivots[i] = -1
+                dir_arr[i] = -1
+            else:
+                dir_arr[i] = dir_arr[i-1]  # 继承上一bar
+        
+        zigzag_indices = []
+        zigzag_prices = []
+        zigzag_dirs = []
 
-    def pine_zigzag(self, high, low, length=5, deviation=0.03, max_size=10):
-        pivots = []
-        direction = 0
-        last_pivot_index = None
-        last_pivot_price = None
+        last_dir = 0
+        last_price = None
+        last_index = None
 
-        for i in range(length, len(high) - length):
-            cur_high = high[i]
-            cur_low = low[i]
-            is_high = all(cur_high >= high[i - length:i + length + 1])
-            is_low = all(cur_low <= low[i - length:i + length + 1])
-
-            if not is_high and not is_low:
+        # 2. 迭代添加zigzag点，考虑方向内点跳过逻辑和deviation阈值
+        for i in range(n):
+            if pivots[i] == 0:
                 continue
-
-            cur_dir = 1 if is_high else -1
-            cur_price = cur_high if is_high else cur_low
-
-            if direction == 0:
-                pivots.append((i, cur_price, cur_dir))
-                direction = -cur_dir
-                last_pivot_index = i
-                last_pivot_price = cur_price
-            elif cur_dir == direction:
-                price_diff = abs(cur_price - last_pivot_price)
-                if price_diff >= deviation * abs(last_pivot_price):
-                    pivots.append((i, cur_price, cur_dir))
-                    direction = -direction
-                    last_pivot_index = i
-                    last_pivot_price = cur_price
-
-        # 保留最后的 max_size 个点
-        if len(pivots) > max_size:
-            pivots = pivots[-max_size:]
-
-        indices, prices, dirs = zip(*pivots) if pivots else ([], [], [])
-
-        # 每段的比率
-        def ratio(p1, p2):
-            return abs(p2 - p1) / abs(p1) if p1 != 0 else 0
-
+            cur_dir = pivots[i]
+            cur_price = high[i] if cur_dir == 1 else low[i]
+            
+            if not zigzag_indices:
+                zigzag_indices.append(i)
+                zigzag_prices.append(cur_price)
+                zigzag_dirs.append(cur_dir)
+                last_dir = cur_dir
+                last_price = cur_price
+                last_index = i
+                continue
+            
+            dir_changed = (cur_dir != last_dir)
+            
+            # 方向未变时，判断是否需要替换当前zigzag点
+            if not dir_changed:
+                # 方向内点跳过逻辑：只有当前点价格突破之前线段高低时才替换
+                if cur_price * cur_dir >= last_price * cur_dir:
+                    # 判断偏差阈值
+                    if deviation > 0:
+                        change_pct = abs(cur_price - last_price) * 100 / last_price if last_price != 0 else 0
+                        if change_pct >= deviation:
+                            zigzag_indices[-1] = i
+                            zigzag_prices[-1] = cur_price
+                            zigzag_dirs[-1] = cur_dir
+                            last_price = cur_price
+                            last_index = i
+                    else:
+                        zigzag_indices[-1] = i
+                        zigzag_prices[-1] = cur_price
+                        zigzag_dirs[-1] = cur_dir
+                        last_price = cur_price
+                        last_index = i
+            else:
+                # 方向变了，直接加点
+                # 方向变化前后线段长度变化判断（类似pine ratio的计算）用来参考
+                zigzag_indices.append(i)
+                zigzag_prices.append(cur_price)
+                zigzag_dirs.append(cur_dir)
+                last_dir = cur_dir
+                last_price = cur_price
+                last_index = i
+            
+            # 限制最大数组长度
+            if len(zigzag_indices) > max_size:
+                zigzag_indices.pop(0)
+                zigzag_prices.pop(0)
+                zigzag_dirs.pop(0)
+        
+        if not zigzag_indices:
+            return [], [], [], []
+        
+        # 3. 保证点顺序是升序
+        zipped = sorted(zip(zigzag_indices, zigzag_prices, zigzag_dirs), key=lambda x: x[0])
+        indices, prices, dirs = zip(*zipped)
+        
+        # 4. 计算线段长度ratio：当前线段长度 / 上一线段长度
+        def safe_ratio(a, b):
+            return abs(b - a) / abs(a) if a != 0 else 0
+        
         ratios = []
         for i in range(1, len(prices)):
-            ratios.append(round(ratio(prices[i - 1], prices[i]), 3))
-
+            ratio = round(safe_ratio(prices[i-1], prices[i]), 3)
+            ratios.append(ratio)
+        
+                    
+        if indices[-1] <= n -1:
+            return list(0), list(0), list(0), []
+        
         return list(indices), list(prices), list(dirs), ratios
 
     def get_harmonic_ratios_from_prices(self, prices):
         if len(prices) < 5:
             return (0, 0, 0, 0)
-
-        x, a, b, c, d = prices[-5:]
-
+        
+        x, a, b, c, d = prices[-5:] 
         def safe_ratio(numer, denom):
-            return abs(numer) / abs(denom) if denom != 0 else 0
+            return abs(numer) / abs(denom) if abs(denom) > 1e-6 else 0
 
         xab = safe_ratio(b - a, a - x)
         abc = safe_ratio(c - b, b - a)
@@ -591,27 +671,138 @@ class Behaviour():
 
         return xab, abc, bcd, xad
 
-    def isCrabPattern(self, opened, close, low, high, error_percent=5):
+    def isCrabPattern(self, opened, close, low, high, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
         
-        _, prices, _, _ = self.pine_zigzag(high, low, length=10, deviation=0.05, max_size=10)
-
-        print(prices)
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
-
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
-
-        print("xab:", xab)
-        print("abc:", abc)
-        print("bcd:", bcd)
-        print("xad:", xad)
-
         if (xab >= 0.382 * err_min and xab <= 0.618 * err_max and
             abc >= 0.382 * err_min and abc <= 0.886 * err_max and
             (bcd >= 2.24 * err_min and bcd <= 3.618 * err_max or
             xad >= 1.618 * err_min and xad <= 1.618 * err_max)):
+            return True
+        return False
+
+    def isGartleyPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+        if (xab >= 0.618 * err_min and xab <= 0.618 * err_max and
+            abc >= 0.382 * err_min and abc <= 0.886 * err_max and
+            ((bcd >= 1.272 * err_min and bcd <= 1.618 * err_max) or
+            (xad >= 0.786 * err_min and xad <= 0.786 * err_max))):
+            return True
+        return False
+
+    def isDeepCrabPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+        if (xab >= 0.886 * err_min and xab <= 0.886 * err_max and
+            abc >= 0.382 * err_min and abc <= 0.886 * err_max and
+            ((bcd >= 2.00 * err_min and bcd <= 3.618 * err_max) or
+            (xad >= 1.618 * err_min and xad <= 1.618 * err_max))):
+            return True
+        return False
+
+    def isBatPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+        if (xab >= 0.382 * err_min and xab <= 0.50 * err_max and
+            abc >= 0.382 * err_min and abc <= 0.886 * err_max and
+            ((bcd >= 1.618 * err_min and bcd <= 2.618 * err_max) or
+            (xad >= 0.886 * err_min and xad <= 0.886 * err_max))):
+            return True
+        return False
+
+    #length tuning
+    def isButterflyPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+
+        if (xab >= 0.786 * err_min and xab <= 0.786 * err_max and
+            abc >= 0.382 * err_min and abc <= 0.886 * err_max and
+            ((bcd >= 1.618 * err_min and bcd <= 2.618 * err_max) or
+            (xad >= 1.272 * err_min and xad <= 1.618 * err_max))):
+            return True
+        return False
+
+    def isSharkPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+        if (abc >= 1.13 * err_min and abc <= 1.618 * err_max and
+            bcd >= 1.618 * err_min and bcd <= 2.24 * err_max and
+            xad >= 0.886 * err_min and xad <= 1.13 * err_max):
+            return True
+        return False
+
+    def isCypherPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+        if (xab >= 0.382 * err_min and xab <= 0.618 * err_max and
+            abc >= 1.13 * err_min and abc <= 1.414 * err_max and
+            ((bcd >= 1.272 * err_min and bcd <= 2.00 * err_max) or
+            (xad >= 0.786 * err_min and xad <= 0.786 * err_max))):
+            return True
+        return False
+
+    def isThreeDrivesPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 6:
+            return False
+        # 3 drive 需要 yxaRatio
+        x, a, b, c, d, y = prices[-7:-1]
+        def safe_ratio(numer, denom):
+            return abs(numer) / abs(denom) if abs(denom) > 1e-6 else 0
+        yxa = safe_ratio(a - x, y - x)
+        xab = safe_ratio(b - a, a - x)
+        abc = safe_ratio(c - b, b - a)
+        bcd = safe_ratio(d - c, c - b)
+        if (yxa >= 0.618 * err_min and yxa <= 0.618 * err_max and
+            xab >= 1.27 * err_min and xab <= 1.618 * err_max and
+            abc >= 0.618 * err_min and abc <= 0.618 * err_max and
+            bcd >= 1.27 * err_min and bcd <= 1.618 * err_max):
+            return True
+        return False
+
+    def isFiveZeroPattern(self, opened, close, low, high, error_percent=10):
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        if len(prices) < 5:
+            return False
+        xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
+        if (xab >= 1.13 * err_min and xab <= 1.618 * err_max and
+            abc >= 1.618 * err_min and abc <= 2.24 * err_max and
+            bcd >= 0.5 * err_min and bcd <= 0.5 * err_max):
             return True
         return False
 
