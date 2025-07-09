@@ -130,6 +130,12 @@ indicators:
     signal: [kdj]
     hot: 0
     cold: 0
+  cci:
+  - candle_period: 6h
+    cold: 0
+    enabled: true
+    hot: 0
+    signal: [cci]
 informants:
   bollinger_bands:
   - candle_period: 4h
@@ -187,7 +193,7 @@ notifiers:
 
         '' -}}'}
     required: {username: null, webhook: null}
-  gmail:
+  hotmail:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
 
@@ -228,7 +234,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [LINK/USDT,MKR/USDT,LEND/USDT,COMP/USDT]
-#,SNX/USDT,BAT/USDT,ZRX/USDT,KNC/USDT,AMPL/USDT,REP/USDT,ANT/USDT,REN/USDT,LRC/USDT,RUNE/USDT,BNT/USDT,WBTC/USDT,KAVA/USDT,BAL/USDT,BTM/USDT,WICC/USDT,NMR/USDT,RSR/USDT,SWTH/USDT,EDO/USDT,IDEX/USDT,MLN/USDT,AST/USDT,UMA/USDT,AUC/USDT,FOR/USDT]
+  market_pairs: []
   output_mode: cli
   update_interval: 14400

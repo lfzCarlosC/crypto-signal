@@ -80,15 +80,15 @@ for(( i=0;i<${#modes[@]};i++)); do
 #1h
     if [ "$runlevel" == "1h" ]
     then
-        python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/huobi_1h_${modes[i]}.yml ${modes[i]}/huobi_1h.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/okex_1h_${modes[i]}.yml ${modes[i]}/okex_1h.log ${modes[i]} -a &
+        nohup python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_15min_${modes[i]}.yml ${modes[i]}/binance_15min.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        #nohup python3 app/app.py  ${modes[i]}/binance_30min_${modes[i]}.yml ${modes[i]}/binance_30min.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        #nohup python3 app/app.py  ${modes[i]}/binance_5min_${modes[i]}.yml ${modes[i]}/binance_5min.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
     fi
 
     if [ "$runpackage"  == "y" ]
     then
-#        python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]} -a &
-        # python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a &
+        nohup python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
@@ -148,18 +148,12 @@ for(( i=0;i<${#modes[@]};i++)); do
 #        python3 app/app.py  ${modes[i]}/bitfinex_d_${modes[i]}.yml  ${modes[i]}/bitfinex_d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/bitfinex_w_${modes[i]}.yml ${modes[i]}/bitfinex_w.log ${modes[i]} -a &
 
-#    python3 app/app.py  ${modes[i]}/binance_15min_${modes[i]}.yml ${modes[i]}/binance_15min.log ${modes[i]} -a &
-#    python3 app/app.py  ${modes[i]}/binance_30min_${modes[i]}.yml ${modes[i]}/binance_30min.log ${modes[i]} -a &
     fi
     
 #Monthly
     if [ "$runlevel" == "1M" ]
     then
         python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/hitbtc_M_${modes[i]}.yml ${modes[i]}/hitbtc_M.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/bitfinex_M_${modes[i]}.yml ${modes[i]}/bitfinex_M.log ${modes[i]} -a &   
-        python3 app/app.py  ${modes[i]}/huobi_M_${modes[i]}.yml ${modes[i]}/huobi_M.log ${modes[i]} -a &
-        python3 app/app.py  ${modes[i]}/poloniex_M_${modes[i]}.yml ${modes[i]}/poloniex_M.log ${modes[i]} -a &
     fi
 
     #contract

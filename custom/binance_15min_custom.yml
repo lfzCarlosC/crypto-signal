@@ -33,7 +33,7 @@ indicators:
     enabled: true
     hot: 0
     signal: [macd]
-  td:
+  peak_loc:
   - alert_enabled: true
     alert_frequency: once
     candle_period: 15m
@@ -41,7 +41,16 @@ indicators:
     enabled: true
     hot: 0
     period_count: 10
-    signal: [td]
+    signal: [peak_loc]
+  valley_loc:
+  - alert_enabled: true
+    alert_frequency: once
+    candle_period: 15m
+    cold: 0
+    enabled: true
+    hot: 0
+    period_count: 10
+    signal: [valley_loc]
   mfi:
   - alert_enabled: true
     alert_frequency: once
@@ -51,6 +60,15 @@ indicators:
     hot: 0
     period_count: 10
     signal: [mfi]
+  td:
+  - alert_enabled: true
+    alert_frequency: once
+    candle_period: 15m
+    cold: 0
+    enabled: true
+    hot: 0
+    period_count: 10
+    signal: [td]
   minus_di:
   - alert_enabled: true
     alert_frequency: once
@@ -86,6 +104,24 @@ indicators:
     hot: 0
     period_count: 10
     signal: [plus_di]
+  minus_dm:
+    - alert_enabled: true
+      alert_frequency: once
+      candle_period: 15m
+      cold: 0
+      enabled: true
+      hot: 0
+      period_count: 10
+      signal: [minus_dm]
+  plus_dm:
+    - alert_enabled: true
+      alert_frequency: once
+      candle_period: 15m
+      cold: 0
+      enabled: true
+      hot: 0
+      period_count: 10
+      signal: [plus_dm]
   rsi:
   - alert_enabled: true
     alert_frequency: once
@@ -112,6 +148,14 @@ indicators:
     signal: [kdj]
     hot: 0
     cold: 0
+  cci:
+  - candle_period: 15m
+    cold: 0
+    enabled: true
+    timeperiod: 144
+    hot: 0
+    signal: [cci]
+
 informants:
   bollinger_bands:
   - candle_period: 15m
@@ -127,15 +171,15 @@ informants:
     enabled: true
     period_count: 22
     signal: [ema]
-  ema33:
+  ema30:
   - candle_period: 15m
     enabled: true
-    period_count: 33
+    period_count: 30
     signal: [ema]
-  ema65:
+  ema60:
   - candle_period: 15m
     enabled: true
-    period_count: 65
+    period_count: 60
     signal: [ema]
   ema120:
   - candle_period: 15m
@@ -162,6 +206,7 @@ informants:
     enabled: true
     period_count: 15
     signal: [vwap]
+
 notifiers:
   discord:
     optional: {avatar: null, template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
@@ -169,7 +214,7 @@ notifiers:
 
         '' -}}'}
     required: {username: null, webhook: null}
-  gmail:
+  hotmail:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
 
@@ -178,7 +223,7 @@ notifiers:
       destination_emails : [cryptalreceiver@gmail.com,cryptolfz@hotmail.com]
       enable: true
       password: 868891251q1q1q1q
-      username: cryptalsender1@gmail.com
+      username: cryptalsender1@hotmail.com
   slack:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
@@ -209,6 +254,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [BTC/USDT,ETH/USDT,BCH/USDT]
+  market_pairs: [BTC/USDT, ETH/USDT, SOL/USDT, SUI/USDT]
   output_mode: cli
   update_interval: 900

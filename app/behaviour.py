@@ -184,7 +184,7 @@ class Behaviour():
 
         if marketPairFlag == 'usd/btc':
             return ( market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") ) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w']);
+               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w', '15m', '30m', '5m']);
     
     def postProcessPair(self, market_pair):
         if ':' in market_pair:
@@ -335,14 +335,14 @@ class Behaviour():
                                 delta_macd[len(delta_macd) - 2] * 3))
 
                     ############################################## goldenForkKdj
-                    len_k = len(kt)
-                    len_d = len(dt)
-                    len_j = len(jt)
-                    goldenForkKdj = (
-                        ((dt[len_d-2] >= kt[len_k-2]) and (kt[len_k-2] >= jt[len_j-2]))
-                        and
-                        ((dt[len_d-1] <= kt[len_k-1]) and (kt[len_k-1] <= jt[len_j-1]))
-                    )
+                    # len_k = len(kt)
+                    # len_d = len(dt)
+                    # len_j = len(jt)
+                    # goldenForkKdj = (
+                    #     ((dt[len_d-2] >= kt[len_k-2]) and (kt[len_k-2] >= jt[len_j-2]))
+                    #     and
+                    #     ((dt[len_d-1] <= kt[len_k-1]) and (kt[len_k-1] <= jt[len_j-1]))
+                    # )
 
                     ############################################# dmi
                     lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
@@ -350,26 +350,26 @@ class Behaviour():
                     lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 5)
 
                     ############################################# macdBottomDivergence
-                    hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
-                    hasPeakDivergence = self.detectPeakDivergence(delta_macd, high, macd_signal)
-                    hasMultipleBottomDivergence = self.detectMultipleBottomDivergence(delta_macd, low, macd_signal)
-                    hasMultiplePeakDivergnce = self.detectMultiplePeakDivergence(delta_macd, high, macd_signal)
+                    # hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
+                    # hasPeakDivergence = self.detectPeakDivergence(delta_macd, high, macd_signal)
+                    # hasMultipleBottomDivergence = self.detectMultipleBottomDivergence(delta_macd, low, macd_signal)
+                    # hasMultiplePeakDivergnce = self.detectMultiplePeakDivergence(delta_macd, high, macd_signal)
 
                     ############################################ macd正值平滑
                     #c(macd+)>5 + D<0.1
                     #counts: 10,
-                    flatPositive = False
-                    positiveFlag = self.lastNDataIsPositive(delta_macd, 10);
-                    if(positiveFlag):
-                        variance, mean, max = self.getVariance(delta_macd, 10);
-                        flatPositive = self.lastNDataIsPositive(delta_macd, 10) and (variance <= 0.01) and (mean/max <= 0.2)
+                    # flatPositive = False
+                    # positiveFlag = self.lastNDataIsPositive(delta_macd, 10);
+                    # if(positiveFlag):
+                    #     variance, mean, max = self.getVariance(delta_macd, 10);
+                    #     flatPositive = self.lastNDataIsPositive(delta_macd, 10) and (variance <= 0.01) and (mean/max <= 0.2)
 
                     #narrowedBoll
                     #(narrowedBoll, test_arr) = self.lastNBoolIsNarrowed((upperband/lowerband)**10, 5) # counts of narrowed points
                     #continuousKRise
-                    lastNKPositive = self.lastNKIsPositive(distance_close_open)
+                    # lastNKPositive = self.lastNKIsPositive(distance_close_open)
 
-                    isBottom3kFlag = self.isBottom3k(low, high)
+                    # isBottom3kFlag = self.isBottom3k(low, high)
 
 
 #=============================================signal rendering=============================================
@@ -382,12 +382,6 @@ class Behaviour():
                         #if (macdVolumeIncreasesSurprisingly):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "MACD 量能上涨异常",
                         #                     indicatorTypeCoinMap)
-
-                        #if (td1PositiveFlag):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 1位置", indicatorTypeCoinMap)
-
-                        #if (td2PositiveFlag):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 2位置", indicatorTypeCoinMap)
 
                         # if(isBottom3kFlag):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "底部3k", indicatorTypeCoinMap)
@@ -408,11 +402,6 @@ class Behaviour():
                         if (td13PositiveFlag):
                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 13位置", indicatorTypeCoinMap)
                            self.toDb("TD 顶部 13位置", exchange, market_pair)
-
-                       # if(self.isBottom2B(volume, opened, close) and (hasMultipleBottomDivergence or hasBottomDivergence)) :
-                       #     self.printResult(new_result, exchange, market_pair, output_mode, "背离+底部2B信号", indicatorTypeCoinMap)
-                       #     self.toDb("背离+底部2B信号", exchange, market_pair)
-
 
                         if (td13NegativeFlag42B or td9NegativeFlag42B):
                             if (self.isBottom2B(volume, opened, close)):
@@ -466,9 +455,6 @@ class Behaviour():
                         #                      indicatorTypeCoinMap)
                         #     self.toDb("沾到ema30", exchange, market_pair)
 #================================================
-                        # if (goldenForkMacd and stochrsi_goldenfork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd金叉信号", indicatorTypeCoinMap)
-
                         # if (macdBottomDivergence and lastNDMIIsPositiveFork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
 
@@ -487,18 +473,15 @@ class Behaviour():
                         # if (goldenForkKdj and lastNDMIIsPositiveFork):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + DMI", indicatorTypeCoinMap)
 
-                        # if (stochrsi_goldenfork and lastNDMIIsPositiveFork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + DMI", indicatorTypeCoinMap)
-
                         # compound indicator
-                        if (hasBottomDivergence):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "段内底背离", indicatorTypeCoinMap)
+                        # if (hasBottomDivergence):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "段内底背离", indicatorTypeCoinMap)
 
                         #if (hasPeakDivergence):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "段内顶背离", indicatorTypeCoinMap)
 
-                        if (hasMultipleBottomDivergence):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空底背离", indicatorTypeCoinMap)
+                        # if (hasMultipleBottomDivergence):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空底背离", indicatorTypeCoinMap)
 
                         #if (hasMultiplePeakDivergnce):
                         #    self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空顶背离", indicatorTypeCoinMap)
@@ -517,6 +500,10 @@ class Behaviour():
                         if (self.isCrabPattern(opened, close, low, high)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "螃蟹形态", indicatorTypeCoinMap)
                             self.toDb("螃蟹形态", exchange, market_pair)
+                        
+                        if (self.isDeepCrabPattern(opened, close, low, high)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "deep螃蟹形态", indicatorTypeCoinMap)
+                            self.toDb("deep螃蟹形态", exchange, market_pair)
                         
                         if (self.isButterflyPattern(opened, close, low, high)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "蝴蝶形态", indicatorTypeCoinMap)
@@ -537,6 +524,10 @@ class Behaviour():
                         if (self.isCypherPattern(opened, close, low, high)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "Cypher形态", indicatorTypeCoinMap)
                             self.toDb("Cypher形态", exchange, market_pair)
+
+                        if (self.isDoublePattern(high, low)):
+                            self.printResult(new_result, exchange, market_pair, output_mode, "DB DT形态", indicatorTypeCoinMap)
+                            self.toDb("DB DT形态", exchange, market_pair)
 
                         # if (self.isThreeDrivesPattern(opened, close, low, high)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "ThreeDrives形态", indicatorTypeCoinMap)
@@ -649,10 +640,10 @@ class Behaviour():
         for i in range(1, len(prices)):
             ratio = round(safe_ratio(prices[i-1], prices[i]), 3)
             ratios.append(ratio)
-        
-                    
-        if indices[-1] <= n -1:
-            return list(0), list(0), list(0), []
+
+        n = n-1
+        if indices[-1] < n - 2:
+            return list([0]), list([0]), list([0]), []
         
         return list(indices), list(prices), list(dirs), ratios
 
@@ -742,6 +733,34 @@ class Behaviour():
             abc >= 0.382 * err_min and abc <= 0.886 * err_max and
             ((bcd >= 1.618 * err_min and bcd <= 2.618 * err_max) or
             (xad >= 1.272 * err_min and xad <= 1.618 * err_max))):
+            return True
+        return False
+
+    def isDoublePattern(self, high, low, max_risk_per_reward=40):
+        # 获取zigzag点和方向
+        indices, prices, dirs, _ = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+        print(indices)
+        print(prices)
+        if len(indices) < 4 or len(dirs) < 4:
+            return None  # 不足4个点无法画
+        
+        # 取倒数第2和第3段的线段
+        x1 = indices[-3]
+        y1 = prices[-3]
+        x2 = indices[-2]
+        y2 = prices[-2]
+
+        midline = prices[-2]
+        midlineIndex = indices[-2]
+        risk = abs(y2 - y1)
+        reward = abs(y2 - midline)
+        riskPerReward = round(risk * 100 / (risk + reward), 2) if (risk + reward) != 0 else 100
+
+        # 检查是否为double top/bottom
+        doubleTop = dirs[-2] == 1 and dirs[-4] == 2 and dirs[-3] == -1 and riskPerReward < max_risk_per_reward
+        doubleBottom = dirs[-2] == -1 and dirs[-4] == -2 and dirs[-3] == 1 and riskPerReward < max_risk_per_reward
+
+        if doubleTop or doubleBottom:
             return True
         return False
 
