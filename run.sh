@@ -18,77 +18,26 @@ cat /dev/null > h${modes[i]}.log
 cat /dev/null > d${modes[i]}.log
 cat /dev/null > w${modes[i]}.log
 
-read -p 'run level: (1h/1M)' runlevel
+read -p 'run level: (1h(30min/4h or 1M)' runlevel
 read -p 'run package(1d/3d/12h/1w): (y/n)' runpackage
 
 #flush redis
 redis-cli FLUSHALL
-
-#for(( i=0;i<${#modes[@]};i++)); do
-
-#    python3 app/updateCoinList.py bittrex.sh ${modes[i]}/bittrex_1h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py bittrex.sh ${modes[i]}/bittrex_1d_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py bitfinex.sh ${modes[i]}/bitfinex_1h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py bitfinex.sh ${modes[i]}/bitfinex_6h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py bitfinex.sh ${modes[i]}/bitfinex_d_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py bitfinex.sh ${modes[i]}/bitfinex_w_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py binance.sh ${modes[i]}/binance_1h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py binance.sh ${modes[i]}/binance_4h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py binance.sh ${modes[i]}/binance_d_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py binance.sh ${modes[i]}/binance_w_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py huobi.sh ${modes[i]}/huobi_1h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py huobi.sh ${modes[i]}/huobi_d_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py huobi.sh ${modes[i]}/huobi_w_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py okex.sh ${modes[i]}/okex_1h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py okex.sh ${modes[i]}/okex_4h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py okex.sh ${modes[i]}/okex_6h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py okex.sh ${modes[i]}/okex_d_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py okex.sh ${modes[i]}/okex_w_${modes[i]}.yml
-#    sleep 10
-
-#    python3 app/updateCoinList.py zb.sh ${modes[i]}/zb_1h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py zb.sh ${modes[i]}/zb_4h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py zb.sh ${modes[i]}/zb_6h_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py zb.sh ${modes[i]}/zb_d_${modes[i]}.yml
-#    sleep 10
-#    python3 app/updateCoinList.py zb.sh ${modes[i]}/zb_w_${modes[i]}.yml
-#    sleep 10
-#done
-
 
 for(( i=0;i<${#modes[@]};i++)); do
 #1h
     if [ "$runlevel" == "1h" ]
     then
         nohup python3 app/app.py  ${modes[i]}/binance_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_15min_${modes[i]}.yml ${modes[i]}/binance_15min.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
-        #nohup python3 app/app.py  ${modes[i]}/binance_30min_${modes[i]}.yml ${modes[i]}/binance_30min.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
-        #nohup python3 app/app.py  ${modes[i]}/binance_5min_${modes[i]}.yml ${modes[i]}/binance_5min.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_1h_${modes[i]}.yml ${modes[i]}/binance_1h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_4h_${modes[i]}.yml ${modes[i]}/bitget_4h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_2h_${modes[i]}.yml ${modes[i]}/bitget_2h.log ${modes[i]}  -a > ${modes[i]}/system.out 2>&1 &
+        
     fi
 
     if [ "$runpackage"  == "y" ]
     then
-        nohup python3 app/app.py  ${modes[i]}/binance_4h_${modes[i]}.yml ${modes[i]}/binance_4h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_6h_${modes[i]}.yml ${modes[i]}/binance_6h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
@@ -124,11 +73,10 @@ for(( i=0;i<${#modes[@]};i++)); do
 #        python3 app/app.py  ${modes[i]}/huobi_d_${modes[i]}.yml ${modes[i]}/huobi_d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/huobi_w_${modes[i]}.yml ${modes[i]}/huobi_w.log ${modes[i]} -a &
 
-#        python3 app/app.py  ${modes[i]}/okex_4h_${modes[i]}.yml ${modes[i]}/okex_4h.log ${modes[i]} -a &
-        nohup python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        # nohup python3 app/app.py  ${modes[i]}/okex_6h_${modes[i]}.yml ${modes[i]}/okex_6h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        # nohup python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        # nohup python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+        # nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
 
         #python3 app/app.py  ${modes[i]}/gateio_4h_${modes[i]}.yml ${modes[i]}/gateio_4h.log ${modes[i]} -a &
         #python3 app/app.py  ${modes[i]}/gateio_6h_${modes[i]}.yml ${modes[i]}/gateio_6h.log ${modes[i]} -a &

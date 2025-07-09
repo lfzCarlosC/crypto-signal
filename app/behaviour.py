@@ -183,7 +183,7 @@ class Behaviour():
             return True;
 
         if marketPairFlag == 'usd/btc':
-            return ( market_pair.lower().endswith("usdt") or market_pair.lower().endswith("usd") ) \
+            return  ( market_pair.lower().endswith("usdt") ) \
                and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w', '15m', '30m', '5m']);
     
     def postProcessPair(self, market_pair):
@@ -238,14 +238,18 @@ class Behaviour():
 
                 ################################# Indicator data retrieving and strategy
                 try:
-                    ohlcv = new_result[exchange][market_pair]['informants']['ohlcv'][0]['result']
+                    arr = new_result[exchange][market_pair]['informants']['ohlcv']
+                    if not arr:
+                        continue;
 
-                    upperband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['upperband'] ;
-                    middleband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['middleband'] ;
-                    lowerband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['lowerband'] ;
+                    ohlcv = arr[0]['result']
+
+                    # upperband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['upperband'] ;
+                    # middleband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['middleband'] ;
+                    # lowerband = new_result[exchange][market_pair]['informants']['bollinger_bands'][0]['result']['lowerband'] ;
+                    # distance_close_open = close - opened;
                     opened = ohlcv['open'];
                     close = ohlcv['close'] ;
-                    distance_close_open = close - opened;
                     low = ohlcv['low'];
                     high = ohlcv['high'] ;
                     volume = ohlcv['volume'] ;
@@ -408,13 +412,17 @@ class Behaviour():
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
 
-                        if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
-                            self.toDb("0轴上macd金叉信号", exchange, market_pair)
 
-                        if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
-                            self.toDb("DMI+", exchange, market_pair)
+
+                        # if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
+                        #     self.toDb("0轴上macd金叉信号", exchange, market_pair)
+
+                        # if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
+                        #     self.toDb("DMI+", exchange, market_pair)
+
+
 
                         # if (self.isBottomPinBar(low, high, close, opened)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "底部pin bar", indicatorTypeCoinMap)
@@ -427,12 +435,18 @@ class Behaviour():
                         # if (flatPositive):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd正值平滑", indicatorTypeCoinMap)
 #================================================
-                        (start, end) = self.detectMacdSlots(delta_macd, 0, 'positive')
-                        if (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[
-                            self.getIndexOfMacdValley(delta_macd, start, end)])):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
-                                             indicatorTypeCoinMap)
-                            self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
+
+
+                        # (start, end) = self.detectMacdSlots(delta_macd, 0, 'positive')
+                        # if (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[
+                        #     self.getIndexOfMacdValley(delta_macd, start, end)])):
+                        #     self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
+                        #                      indicatorTypeCoinMap)
+                        #     self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
+
+
+
+
 
                         # if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[self.getIndexOfMacdValley(delta_macd, start, end)]))):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
@@ -497,43 +511,44 @@ class Behaviour():
                             self.printResult(new_result, exchange, market_pair, output_mode, "cci over 100", indicatorTypeCoinMap)
                             self.toDb("cci over 100", exchange, market_pair)
                     
-                        if (self.isCrabPattern(opened, close, low, high)):
+                        indices, prices, dirs, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
+                        if (self.isCrabPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "螃蟹形态", indicatorTypeCoinMap)
                             self.toDb("螃蟹形态", exchange, market_pair)
                         
-                        if (self.isDeepCrabPattern(opened, close, low, high)):
+                        if (self.isDeepCrabPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "deep螃蟹形态", indicatorTypeCoinMap)
                             self.toDb("deep螃蟹形态", exchange, market_pair)
                         
-                        if (self.isButterflyPattern(opened, close, low, high)):
+                        if (self.isButterflyPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "蝴蝶形态", indicatorTypeCoinMap)
                             self.toDb("蝴蝶形态", exchange, market_pair)
 
-                        if (self.isBatPattern(opened, close, low, high)):
+                        if (self.isBatPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "蝙蝠形态", indicatorTypeCoinMap)
                             self.toDb("蝙蝠形态", exchange, market_pair)
 
-                        if (self.isGartleyPattern(opened, close, low, high)):
+                        if (self.isGartleyPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "加特利形态", indicatorTypeCoinMap)
                             self.toDb("加特利形态", exchange, market_pair)
 
-                        if (self.isSharkPattern(opened, close, low, high)):
+                        if (self.isSharkPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "鲨鱼形态", indicatorTypeCoinMap)
                             self.toDb("鲨鱼形态", exchange, market_pair)
 
-                        if (self.isCypherPattern(opened, close, low, high)):
+                        if (self.isCypherPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "Cypher形态", indicatorTypeCoinMap)
                             self.toDb("Cypher形态", exchange, market_pair)
 
-                        if (self.isDoublePattern(high, low)):
+                        if (self.isDoublePattern(high, low, indices, prices, dirs)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "DB DT形态", indicatorTypeCoinMap)
                             self.toDb("DB DT形态", exchange, market_pair)
 
-                        # if (self.isThreeDrivesPattern(opened, close, low, high)):
+                        # if (self.isThreeDrivesPattern(opened, close, low, high, indices, prices, ratios)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "ThreeDrives形态", indicatorTypeCoinMap)
                         #     self.toDb("ThreeDrives形态", exchange, market_pair)
 
-                        # if (self.isFiveZeroPattern(opened, close, low, high)):
+                        # if (self.isFiveZeroPattern(opened, close, low, high, indices, prices, ratios)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "5-0形态", indicatorTypeCoinMap)
                         #     self.toDb("5-0形态", exchange, market_pair)
 
@@ -641,8 +656,7 @@ class Behaviour():
             ratio = round(safe_ratio(prices[i-1], prices[i]), 3)
             ratios.append(ratio)
 
-        n = n-1
-        if indices[-1] < n - 2:
+        if indices[-1] < n - 3:
             return list([0]), list([0]), list([0]), []
         
         return list(indices), list(prices), list(dirs), ratios
@@ -662,11 +676,10 @@ class Behaviour():
 
         return xab, abc, bcd, xad
 
-    def isCrabPattern(self, opened, close, low, high, error_percent=10):
+    def isCrabPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
         
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -677,10 +690,9 @@ class Behaviour():
             return True
         return False
 
-    def isGartleyPattern(self, opened, close, low, high, error_percent=10):
+    def isGartleyPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -691,10 +703,9 @@ class Behaviour():
             return True
         return False
 
-    def isDeepCrabPattern(self, opened, close, low, high, error_percent=10):
+    def isDeepCrabPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -705,10 +716,9 @@ class Behaviour():
             return True
         return False
 
-    def isBatPattern(self, opened, close, low, high, error_percent=10):
+    def isBatPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -720,11 +730,9 @@ class Behaviour():
         return False
 
     #length tuning
-    def isButterflyPattern(self, opened, close, low, high, error_percent=10):
+    def isButterflyPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
-
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -736,11 +744,8 @@ class Behaviour():
             return True
         return False
 
-    def isDoublePattern(self, high, low, max_risk_per_reward=40):
+    def isDoublePattern(self, high, low, indices, prices, dirs, max_risk_per_reward=40):
         # 获取zigzag点和方向
-        indices, prices, dirs, _ = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
-        print(indices)
-        print(prices)
         if len(indices) < 4 or len(dirs) < 4:
             return None  # 不足4个点无法画
         
@@ -764,10 +769,9 @@ class Behaviour():
             return True
         return False
 
-    def isSharkPattern(self, opened, close, low, high, error_percent=10):
+    def isSharkPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -777,10 +781,9 @@ class Behaviour():
             return True
         return False
 
-    def isCypherPattern(self, opened, close, low, high, error_percent=10):
+    def isCypherPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -791,7 +794,7 @@ class Behaviour():
             return True
         return False
 
-    def isThreeDrivesPattern(self, opened, close, low, high, error_percent=10):
+    def isThreeDrivesPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
         indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
@@ -812,7 +815,7 @@ class Behaviour():
             return True
         return False
 
-    def isFiveZeroPattern(self, opened, close, low, high, error_percent=10):
+    def isFiveZeroPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
         indices, prices, _, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
@@ -1498,18 +1501,15 @@ class Behaviour():
                 market_pair
             )
         except ValueError as e:
-            self.logger.error(e)
             self.logger.error(
                 'Invalid data encountered while processing pair %s, skipping',
                 market_pair
             )
-            self.logger.debug(traceback.format_exc())
         except AttributeError:
             self.logger.error(
                 'Something went wrong fetching data for %s, skipping',
                 market_pair
             )
-            self.logger.debug(traceback.format_exc())
         return historical_data
 
 
