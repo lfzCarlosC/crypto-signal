@@ -35,13 +35,14 @@ class Notifier():
                    "kucoin": "kucoin交易所",
                    "coinex":"coinex交易所",
                    "hitbtc":"hitbtc交易所",
-                   "poloniex":"poloniex交易所"
+                   "poloniex":"poloniex交易所",
+                   "bitget":"bitget"
                   }
                   
     periodMap = {"15min":"15分钟","30min":"30分钟","1h":"1小时", "1d":"日线", "d":"日线", "3d":"3日", "4h":"4小时", "6h":"6小时", "12h":"12小时", "w":"周线"}
     cst_tz = timezone('Asia/Shanghai')  
     utc_tz = timezone('UTC')
-    webhook = 'https://oapi.dingtalk.com/robot/send?access_token=86546fe72b329fa2fac6f133dd6d6db318c4a12b13dd03b2d5df8c2375f73124'
+    webhook = 'https://oapi.dingtalk.com/robot/send?access_token=1c46cb23a6562a4325bea9cf4225b11209e4b2fc4edd7d07e2ef404e15a86f0b'
     
     def __init__(self, notifier_config):
         """Initializes Notifier class
@@ -188,7 +189,7 @@ class Notifier():
                 self.twilio_client.notify(message)
 
 
-    def notify_gmail(self, new_analysis):
+    def notify_gmail(self, new_analysis, text):
         """Send a notification via the gmail notifier
 
         Args:
@@ -197,6 +198,7 @@ class Notifier():
         if self.gmail_configured:
             (message, title) = self._indicator_message_templater(
                 new_analysis,
+                text,
                 self.notifier_config['gmail']['optional']['template']
             )
             message = message.strip()
@@ -206,9 +208,21 @@ class Notifier():
                 if(indicatorModes == 'easy'):
                     self.dingtalk(message, self.webhook)
                 self.gmail_client.notify(message, title)
+    
+    def notify_dingtalk(self, new_analysis, text, market_pair):
+        (message, title, period) = self._indicator_message_templater(
+                new_analysis,
+                text,
+                self.notifier_config['gmail']['optional']['template']
+            )
+     
+        if market_pair in ['BTC/USDT', 'ETH/USDT']:
+            self.dingtalk(message + " - " + market_pair + " - " + title, self.webhook)
 
     def dingtalk(self, msg, webhook):
         headers = {'Content-Type': 'application/json; charset=utf-8'}
+        prefix = "ding "
+        msg += prefix
         data = {'msgtype': 'text', 'text': {'content': msg}, 'at': {'atMobiles': [], 'isAtAll': False}}
         post_data = json.dumps(data)
         response = requests.post(webhook, headers=headers, data=post_data)
@@ -292,9 +306,7 @@ class Notifier():
         type = ""
         if temp[len(temp)-1].split(".")[0] == "contract" :
             type = "合约"
-            # [BTC - USD - 190927, ETC - USD - 190927, ETH - USD - 190927, LTC - USD - 190927, BSV - USD - 190927,
-            #  BSV - USD - 190927, XRP - USD - 190927, TRX - USD - 190927,
-            #  EOS - USD - 190927]
+
         return self.exchangeMap[exchange], self.periodMap[period], type
     
     def getLocalizeTime(self):
@@ -303,7 +315,7 @@ class Notifier():
         china = utcnow.astimezone(self.cst_tz)  
         return "   发送时间: 时区: 亚洲/上海(GMT+08:00)  %s"%china.strftime('%Y-%m-%d %H:%M:%S')
         
-    def _indicator_message_templater(self, new_analysis, template):
+    def _indicator_message_templater(self, new_analysis, text, template):
         """Creates a message from a user defined template
 
         Args:
@@ -313,16 +325,14 @@ class Notifier():
         Returns:
             str: The templated messages for the notifier.
         """
-
         if not self.last_analysis:
             self.last_analysis = new_analysis
-
+        
         message_template = Template(template)
         new_message = str()
         
-        # extractCoins.matchCoinPairsToUsdt(sys.argv[2]);
-        file = open(sys.argv[2], mode='r')
-        text = file.read()
+        # file = open(sys.argv[2], mode='r')
+
         if text == "":
             return "", ""
 
@@ -331,101 +341,8 @@ class Notifier():
         if len(sys.argv) > 5 and (sys.argv[5] == '-prefix'):
             prefix = self.notifier_config['gmail']['prefix']
             title = prefix + title
-        new_message = new_message + "<html><head></head><body>"
-        # new_message = new_message + self.getLocalizeTime() + "\n"
         new_message = new_message + text
-        new_message = new_message + "</body> </html>"
 
-        file.close()
-
-        for exchange in new_analysis:
-            for market in new_analysis[exchange]:
-                for indicator_type in new_analysis[exchange][market]:
-                    if indicator_type == 'informants':
-                        continue
-                    for indicator in new_analysis[exchange][market][indicator_type]:
-                        for index, analysis in enumerate(new_analysis[exchange][market][indicator_type][indicator]):
-                            if analysis['result'].shape[0] == 0:
-                                continue
-
-                            values = dict()
-
-                            if indicator_type == 'indicators':
-                                for signal in analysis['config']['signal']:
-                                    latest_result = analysis['result'].iloc[-1]
-                                    if signal == 'kdj':
-                                        values['k'] = analysis['result'].iloc[-1]['k']
-                                        values['d'] = analysis['result'].iloc[-1]['d']
-                                        values['j'] = analysis['result'].iloc[-1]['j']
-                                        if isinstance(values['k'], float):
-                                            values['k'] = format(values['k'], '.8f')
-                                        if isinstance(values['d'], float):
-                                            values['d'] = format(values['d'], '.8f')
-                                        if isinstance(values['j'], float):
-                                            values['j'] = format(values['j'], '.8f')
-                                    else:
-                                        values[signal] = analysis['result'].iloc[-1][signal]
-                                        if isinstance(values[signal], float):
-                                            values[signal] = format(values[signal], '.8f')
-
-                            elif indicator_type == 'crossovers':
-                                latest_result = analysis['result'].iloc[-1]
-
-                                key_signal = '{}_{}'.format(
-                                    analysis['config']['key_signal'],
-                                    analysis['config']['key_indicator_index']
-                                )
-
-                                crossed_signal = '{}_{}'.format(
-                                    analysis['config']['crossed_signal'],
-                                    analysis['config']['crossed_indicator_index']
-                                )
-
-                                values[key_signal] = analysis['result'].iloc[-1][key_signal]
-                                if isinstance(values[key_signal], float):
-                                        values[key_signal] = format(values[key_signal], '.8f')
-
-                                values[crossed_signal] = analysis['result'].iloc[-1][crossed_signal]
-                                if isinstance(values[crossed_signal], float):
-                                        values[crossed_signal] = format(values[crossed_signal], '.8f')
-
-                            status = 'neutral'
-                            if latest_result['is_hot']:
-                                status = 'hot'
-                            elif latest_result['is_cold']:
-                                status = 'cold'
-
-                            # Save status of indicator's new analysis
-                            new_analysis[exchange][market][indicator_type][indicator][index]['status'] = status
-
-                            if latest_result['is_hot'] or latest_result['is_cold']:
-                                try:
-                                    last_status = self.last_analysis[exchange][market][indicator_type][indicator][index]['status']
-                                except:
-                                    last_status = str()
-
-                                should_alert = True
-                                if analysis['config']['alert_frequency'] == 'once':
-                                    if last_status == status:
-                                        should_alert = False
-
-                                if not analysis['config']['alert_enabled']:
-                                    should_alert = False
-
-                                if False and should_alert:
-                                    base_currency, quote_currency = market.split('/')
-                                    new_message += message_template.render(
-                                        values=values,
-                                        exchange=exchange,
-                                        market=market,
-                                        base_currency=base_currency,
-                                        quote_currency=quote_currency,
-                                        indicator=indicator,
-                                        indicator_number=index,
-                                        analysis=analysis,
-                                        status=status,
-                                        last_status=last_status
-                                    )
         # Merge changes from new analysis into last analysis
         self.last_analysis = {**self.last_analysis, **new_analysis}
-        return new_message, title
+        return new_message, title, period

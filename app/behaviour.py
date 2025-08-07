@@ -277,8 +277,8 @@ class Behaviour():
                     # try:
                     #     ema7 = new_result[exchange][market_pair]['informants']['ema7'][0]['result']['ema'];
                     #     ema22 = new_result[exchange][market_pair]['informants']['ema22'][0]['result']['ema'];
-                    ema30 = new_result[exchange][market_pair]['informants']['ema30'][0]['result']['ema'];
-                    ema60 = new_result[exchange][market_pair]['informants']['ema60'][0]['result']['ema'];
+                    # ema30 = new_result[exchange][market_pair]['informants']['ema30'][0]['result']['ema'];
+                    # ema60 = new_result[exchange][market_pair]['informants']['ema60'][0]['result']['ema'];
                     #
                     #     ema7IsOverEma65 = self.ema7OverEma65(ema7, ema65);
                     #     ema7IsOverEma22 = self.ema7OverEma22(ema7, ema22);
@@ -294,30 +294,17 @@ class Behaviour():
                     ###################################### td indicator
                     indicators = new_result[exchange][market_pair]['indicators']
                     td9PositiveFlag = False
-                    td13PositiveFlag = False
                     td9NegativeFlag = False
+                    td8PositiveFlag = False
+                    td8NegativeFlag = False
+                    td13PositiveFlag = False
                     td13NegativeFlag = False
+                    td12PositiveFlag = False
+                    td12NegativeFlag = False
 
-                    td9PositiveFlag42B = False
-                    td13PositiveFlag42B = False
-                    td1PostiveFlag42B = False
-                    td2PositiveFlag42B = False
-                    td9NegativeFlag42B = False
-                    td13NegativeFlag42B = False
                     if('td' in indicators):
                         td = indicators['td'][0]['result']['td'];
-                        (td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag) = self.tdDeteminator(td, False)
-                        ###################################### 2B indicator
-                        # This 2B is based on TD bottom point. It pick ups the 2B point near/at TD 9 point.
-                        # argrelextrema is not very useful due to massive but not distinguished valley points.
-                        # peakIndex = new_result[exchange][market_pair]['indicators']['peak_loc'][0]['result']['peak_loc']
-                        # valleyIndex = new_result[exchange][market_pair]['indicators']['valley_loc'][0]['result']['valley_loc']
-
-                        #- bottom 2B for later use
-                        (td9PositiveFlag42B, td9NegativeFlag42B, td13PositiveFlag42B, td13NegativeFlag42B) = self.tdDeteminator(td, True)
-
-                    ########################################## cci
-                    isCciOver100 = (cci[len(cci) - 1] > 100) and (cci[len(cci) - 2] < 100)
+                        (td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag) = self.tdDeteminator(td)
 
                     ########################################## goldenMacdFork
                     intersectionValueAndMin = [0, 0]
@@ -382,36 +369,41 @@ class Behaviour():
                         # if(self.isOverceedingTriangleLine(peakLoc, ohlcv)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "上升突破三角形",
                         #                      indicatorTypeCoinMap)
+                    
+                        if (td8NegativeFlag):
+                            self.notifier.notify_dingtalk(new_result, "TD8底部信号", market_pair)
+                            
 
-                        #if (macdVolumeIncreasesSurprisingly):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "MACD 量能上涨异常",
-                        #                     indicatorTypeCoinMap)
+                        if (td8PositiveFlag):
+                           self.notifier.notify_dingtalk(new_result, "TD8顶部信号", market_pair)
+                    
+                        if (td12NegativeFlag):
+                           self.notifier.notify_dingtalk(new_result, "TD12底部信号", market_pair)
 
-                        # if(isBottom3kFlag):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "底部3k", indicatorTypeCoinMap)
-                        #     self.toDb("底部3k", exchange, market_pair)
+                        if (td12PositiveFlag):
+                            self.notifier.notify_dingtalk(new_result,  "TD12顶部信号", market_pair)
 
                         if (td9NegativeFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 9位置", indicatorTypeCoinMap)
                             self.toDb("TD 底部 9位置", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "TD 底部 9位置", market_pair)
 
                         if (td13NegativeFlag):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "TD 底部 13位置", indicatorTypeCoinMap)
                             self.toDb("TD 底部 13位置", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "TD 底部 13位置", market_pair)
 
                         if (td9PositiveFlag):
-                           self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 9位置", indicatorTypeCoinMap)
                            self.toDb("TD 顶部 9位置", exchange, market_pair)
+                           self.notifier.notify_dingtalk(new_result,  "TD 顶部 9位置", market_pair)
 
                         if (td13PositiveFlag):
-                           self.printResult(new_result, exchange, market_pair, output_mode, "TD 顶部 13位置", indicatorTypeCoinMap)
                            self.toDb("TD 顶部 13位置", exchange, market_pair)
+                           self.notifier.notify_dingtalk(new_result, "TD 顶部 13位置", market_pair)
 
-                        if (td13NegativeFlag42B or td9NegativeFlag42B):
+                        if (td13NegativeFlag or td9NegativeFlag):
                             if (self.isBottom2B(volume, opened, close)):
                                 self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
-
+                                self.notifier.notify_dingtalk(new_result, "TD+底部2B信号", market_pair)
 
 
                         # if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
@@ -443,10 +435,6 @@ class Behaviour():
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
                         #                      indicatorTypeCoinMap)
                         #     self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
-
-
-
-
 
                         # if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[self.getIndexOfMacdValley(delta_macd, start, end)]))):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
@@ -506,43 +494,47 @@ class Behaviour():
                         # if (stochrsi_goldenfork and macdIsDecreased):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd下跌量能减弱",
                         #                      indicatorTypeCoinMap)
-
-                        if (isCciOver100):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "cci over 100", indicatorTypeCoinMap)
-                            self.toDb("cci over 100", exchange, market_pair)
                     
                         indices, prices, dirs, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
                         if (self.isCrabPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "螃蟹形态", indicatorTypeCoinMap)
                             self.toDb("螃蟹形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "螃蟹形态", market_pair)
                         
                         if (self.isDeepCrabPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "deep螃蟹形态", indicatorTypeCoinMap)
                             self.toDb("deep螃蟹形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "deep螃蟹形态", market_pair)
                         
                         if (self.isButterflyPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "蝴蝶形态", indicatorTypeCoinMap)
                             self.toDb("蝴蝶形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "蝴蝶形态", market_pair)
 
                         if (self.isBatPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "蝙蝠形态", indicatorTypeCoinMap)
                             self.toDb("蝙蝠形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "蝙蝠形态", market_pair)
 
                         if (self.isGartleyPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "加特利形态", indicatorTypeCoinMap)
                             self.toDb("加特利形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "加特利形态", market_pair)
 
                         if (self.isSharkPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "鲨鱼形态", indicatorTypeCoinMap)
                             self.toDb("鲨鱼形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "鲨鱼形态", market_pair)
 
                         if (self.isCypherPattern(opened, close, low, high, indices, prices, ratios)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "Cypher形态", indicatorTypeCoinMap)
                             self.toDb("Cypher形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "Cypher形态", market_pair)
 
                         if (self.isDoublePattern(high, low, indices, prices, dirs)):
                             self.printResult(new_result, exchange, market_pair, output_mode, "DB DT形态", indicatorTypeCoinMap)
                             self.toDb("DB DT形态", exchange, market_pair)
+                            self.notifier.notify_dingtalk(new_result, "DB DT形态", market_pair)
 
                         # if (self.isThreeDrivesPattern(opened, close, low, high, indices, prices, ratios)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "ThreeDrives形态", indicatorTypeCoinMap)
@@ -656,7 +648,7 @@ class Behaviour():
             ratio = round(safe_ratio(prices[i-1], prices[i]), 3)
             ratios.append(ratio)
 
-        if indices[-1] < n - 3:
+        if indices[-1] < n - 10:
             return list([0]), list([0]), list([0]), []
         
         return list(indices), list(prices), list(dirs), ratios
@@ -700,6 +692,37 @@ class Behaviour():
             abc >= 0.382 * err_min and abc <= 0.886 * err_max and
             ((bcd >= 1.272 * err_min and bcd <= 1.618 * err_max) or
             (xad >= 0.786 * err_min and xad <= 0.786 * err_max))):
+            return True
+        return False
+
+    def isAbcdPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
+        """
+        检测ABCD形态
+        prices: zigzag点的价格列表，最新在最后
+        ratios: zigzag段的比例列表，最新在最后
+        error_percent: 允许误差百分比
+        """
+        err_min = (100 - error_percent) / 100
+        err_max = (100 + error_percent) / 100
+        if len(prices) < 4 or len(ratios) < 3:
+            return False
+
+        abcRatio = ratios[-3]
+        bcdRatio = ratios[-2]
+
+        a = prices[-4]
+        b = prices[-3]
+        c = prices[-2]
+        d = prices[-1]
+
+        abcdDirection = (
+            (a < b and a < c and c < b and c < d and a < d and b < d) or
+            (a > b and a > c and c > b and c > d and a > d and b > d)
+        )
+
+        if (abcRatio >= 0.618 * err_min and abcRatio <= 0.786 * err_max and
+            bcdRatio >= 1.272 * err_min and bcdRatio <= 1.618 * err_max and
+            abcdDirection):
             return True
         return False
 
@@ -866,25 +889,42 @@ class Behaviour():
         return (priceMatches2BPattern and volumeMatches2BPattern) \
                or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
 
-    def tdDeteminator(self, td, needtd8):
+    def tdDeteminator(self, td):
         td9PositiveFlag = False
         td9NegativeFlag = False
         td13PositiveFlag = False
         td13NegativeFlag = False
+        td8PositiveFlag = False
+        td8NegativeFlag = False
+        td12PositiveFlag = False
+        td12NegativeFlag = False
 
+
+        if ((td[len(td) - 1] in (8,8.0)) or (td[len(td) - 2] in (8,8.0))):
+            td8PositiveFlag = True;
+
+        if ((td[len(td) - 1] in (-8,-8.0)) or (td[len(td) - 2] in (-8,-8.0))):
+            td8NegativeFlag = True;
+        
         if ((td[len(td) - 1] in (9,9.0)) or (td[len(td) - 2] in (9,9.0))):
             td9PositiveFlag = True;
 
         if ((td[len(td) - 1] in (-9,-9.0)) or (td[len(td) - 2] in (-9,-9.0))):
             td9NegativeFlag = True;
 
+        if ((td[len(td) - 1] in (12, 12.0)) or (td[len(td) - 2] in (12, 12.0))):
+            td12PositiveFlag = True;
+
+        if ((td[len(td) - 1] in (-12, -12.0)) or (td[len(td) - 2] in (-12, -12.0))):
+            td12NegativeFlag = True;
+        
         if ((td[len(td) - 1] in (13, 13.0)) or (td[len(td) - 2] in (13, 13.0))):
             td13PositiveFlag = True;
 
         if ((td[len(td) - 1] in (-13, -13.0)) or (td[len(td) - 2] in (-13, -13.0))):
             td13NegativeFlag = True;
 
-        return td9PositiveFlag, td9NegativeFlag, td13PositiveFlag, td13NegativeFlag;
+        return td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag;
 
     def isOverceedingTriangleLine(self, loc_ids, ohlcv):
         indexX1 = loc_ids[0]

@@ -5,7 +5,7 @@ crossovers:
     enabled: true, key_indicator: ohlcv, key_indicator_index: 0, key_indicator_type: informants,
     key_signal: close}
 exchanges:
-  okcoin:
+  okx:
     required: {enabled: true}
 indicators:
   adx:
@@ -134,6 +134,7 @@ indicators:
   - candle_period: 6h
     cold: 0
     enabled: true
+    timeperiod: 144
     hot: 0
     signal: [cci]
 informants:
@@ -170,7 +171,7 @@ informants:
   - candle_period: 6h
     enabled: true
     period_count: 365
-    signal: ema] 
+    signal: [ema]
   ohlcv:
   - candle_period: 6h
     enabled: true
@@ -233,6 +234,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [LINK/USDT,MKR/USDT,LEND/USDT,COMP/USDT,SNX/USDT,BAT/USDT,ZRX/USDT,KNC/USDT,AMPL/USDT,REP/USDT,ANT/USDT,REN/USDT,LRC/USDT,RUNE/USDT,BNT/USDT,WBTC/USDT,KAVA/USDT,BAL/USDT,BTM/USDT,WICC/USDT,NMR/USDT,RSR/USDT,SWTH/USDT,EDO/USDT,IDEX/USDT,MLN/USDT,AST/USDT,UMA/USDT,AUC/USDT,FOR/USDT]
+  market_pairs: [BTC/USDT, ETH/USDT]
   output_mode: cli
   update_interval: 21600

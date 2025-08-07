@@ -5,7 +5,7 @@ crossovers:
     enabled: true, key_indicator: ohlcv, key_indicator_index: 0, key_indicator_type: informants,
     key_signal: close}
 exchanges:
-  okcoin:
+  okx:
     required: {enabled: true}
 indicators:
   adx:
@@ -60,24 +60,6 @@ indicators:
     hot: 0
     period_count: 10
     signal: [minus_di]
-  minus_dm:
-    - alert_enabled: true
-      alert_frequency: once
-      candle_period: 12h
-      cold: 0
-      enabled: true
-      hot: 0
-      period_count: 10
-      signal: [minus_dm]
-  plus_dm:
-    - alert_enabled: true
-      alert_frequency: once
-      candle_period: 12h
-      cold: 0
-      enabled: true
-      hot: 0
-      period_count: 10
-      signal: [plus_dm]
   momentum:
   - alert_enabled: true
     alert_frequency: once
@@ -104,6 +86,24 @@ indicators:
     hot: 0
     period_count: 10
     signal: [plus_di]
+  minus_dm:
+    - alert_enabled: true
+      alert_frequency: once
+      candle_period: 12h
+      cold: 0
+      enabled: true
+      hot: 0
+      period_count: 10
+      signal: [minus_dm]
+  plus_dm:
+    - alert_enabled: true
+      alert_frequency: once
+      candle_period: 12h
+      cold: 0
+      enabled: true
+      hot: 0
+      period_count: 10
+      signal: [plus_dm]
   rsi:
   - alert_enabled: true
     alert_frequency: once
@@ -131,7 +131,7 @@ indicators:
     hot: 0
     cold: 0
   cci:
-  - candle_period: 1d
+  - candle_period: 12h
     cold: 0
     enabled: true
     timeperiod: 144
@@ -203,7 +203,7 @@ notifiers:
       destination_emails : [cryptalreceiver@gmail.com,cryptolfz@hotmail.com]
       enable: true
       password: 868891251q1q1q1q
-      username: cryptalsender1@gmail.com
+      username: cryptalsender1@hotmail.com
   slack:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
@@ -234,6 +234,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: []
+  market_pairs: [BTC/USDT, ETH/USDT]
   output_mode: cli
   update_interval: 43200

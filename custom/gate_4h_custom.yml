@@ -5,13 +5,13 @@ crossovers:
     enabled: true, key_indicator: ohlcv, key_indicator_index: 0, key_indicator_type: informants,
     key_signal: close}
 exchanges:
-  bitget:
+  gate:
     required: {enabled: true}
 indicators:
   adx:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 0
     enabled: true
     hot: 0
@@ -20,59 +20,41 @@ indicators:
   ichimoku:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: true
     enabled: true
     hot: true
     signal: [leading_span_a, leading_span_b]
-  macd:
-  - alert_enabled: true
-    alert_frequency: once
-    candle_period: 6h
-    cold: 0
-    enabled: true
-    hot: 0
-    signal: [macd]
-  peak_loc:
-  - alert_enabled: true
-    alert_frequency: once
-    candle_period: 6h
-    cold: 0
-    enabled: true
-    hot: 0
-    period_count: 10
-    signal: [peak_loc]
-  valley_loc:
-  - alert_enabled: true
-    alert_frequency: once
-    candle_period: 6h
-    cold: 0
-    enabled: true
-    hot: 0
-    period_count: 10
-    signal: [valley_loc]
-  mfi:
-  - alert_enabled: true
-    alert_frequency: once
-    candle_period: 6h
-    cold: 0
-    enabled: true
-    hot: 0
-    period_count: 10
-    signal: [mfi]
   td:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 0
     enabled: true
     hot: 0
     period_count: 10
     signal: [td]
+  macd:
+  - alert_enabled: true
+    alert_frequency: once
+    candle_period: 4h
+    cold: 0
+    enabled: true
+    hot: 0
+    signal: [macd]
+  mfi:
+  - alert_enabled: true
+    alert_frequency: once
+    candle_period: 4h
+    cold: 0
+    enabled: true
+    hot: 0
+    period_count: 10
+    signal: [mfi]
   minus_di:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 0
     enabled: true
     hot: 0
@@ -81,7 +63,7 @@ indicators:
   momentum:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 0
     enabled: true
     hot: 0
@@ -90,7 +72,7 @@ indicators:
   obv:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 0
     enabled: true
     hot: 0
@@ -98,34 +80,16 @@ indicators:
   plus_di:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 0
     enabled: true
     hot: 0
     period_count: 10
     signal: [plus_di]
-  minus_dm:
-    - alert_enabled: true
-      alert_frequency: once
-      candle_period: 6h
-      cold: 0
-      enabled: true
-      hot: 0
-      period_count: 10
-      signal: [minus_dm]
-  plus_dm:
-    - alert_enabled: true
-      alert_frequency: once
-      candle_period: 6h
-      cold: 0
-      enabled: true
-      hot: 0
-      period_count: 10
-      signal: [plus_dm]
   rsi:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 70
     enabled: true
     hot: 30
@@ -134,7 +98,7 @@ indicators:
   stoch_rsi:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     cold: 80
     enabled: true
     hot: 20
@@ -143,70 +107,61 @@ indicators:
   kdj:
   - alert_enabled: true
     alert_frequency: once
-    candle_period: 6h
+    candle_period: 4h
     enabled: true
     signal: [kdj]
     hot: 0
     cold: 0
-  cci:
-  - candle_period: 6h
-    cold: 0
-    enabled: true
-    timeperiod: 144
-    hot: 0
-    signal: [cci]
-
 informants:
   bollinger_bands:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     signal: [upperband, middleband, lowerband]
   ema7:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 7
     signal: [ema]
   ema22:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 22
     signal: [ema]
-  ema30:
-  - candle_period: 6h
+  ema33:
+  - candle_period: 4h
     enabled: true
-    period_count: 30
+    period_count: 33
     signal: [ema]
-  ema60:
-  - candle_period: 6h
+  ema65:
+  - candle_period: 4h
     enabled: true
-    period_count: 60
+    period_count: 65
     signal: [ema]
   ema120:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 120
     signal: [ema]
   ema365:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 365
     signal: [ema]
   ohlcv:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 15
     signal: [close]
   sma:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 15
     signal: [sma]
   vwap:
-  - candle_period: 6h
+  - candle_period: 4h
     enabled: true
     period_count: 15
     signal: [vwap]
-
 notifiers:
   discord:
     optional: {avatar: null, template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
@@ -214,16 +169,17 @@ notifiers:
 
         '' -}}'}
     required: {username: null, webhook: null}
-  hotmail:
+  gmail:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
 
         '' -}}'}
+    prefix: defi
     required:
       destination_emails : [cryptalreceiver@gmail.com,cryptolfz@hotmail.com]
       enable: true
       password: 868891251q1q1q1q
-      username: cryptalsender1@hotmail.com
+      username: cryptalsender1@gmail.com
   slack:
     optional: {template: '{{exchange}}-{{market}}-{{indicator}}-{{indicator_number}}
         is {{status}}!{{ ''
@@ -254,6 +210,6 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [BTC/USDT, ETH/USDT]
+  market_pairs: [LINK/USDT,MKR/USDT,LEND/USDT,COMP/USDT,SNX/USDT,BAT/USDT,ZRX/USDT,KNC/USDT,AMPL/USDT,REP/USDT,ANT/USDT,REN/USDT,LRC/USDT,RUNE/USDT,BNT/USDT,WBTC/USDT,KAVA/USDT,BAL/USDT,BTM/USDT,WICC/USDT,NMR/USDT,RSR/USDT,SWTH/USDT,EDO/USDT,IDEX/USDT,MLN/USDT,AST/USDT,UMA/USDT,AUC/USDT,FOR/USDT]
   output_mode: cli
-  update_interval: 21600
+  update_interval: 14400

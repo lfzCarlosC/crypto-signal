@@ -254,6 +254,7 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [AVAX/USDT]
+  market_pairs: [BTC/USDT, ETH/USDT, XRP/USDT, BCH/USDT, DOT/USDT,
+    LINK/USDT, ADA/USDT, SOL/USDT, SUI/USDT, DOGE/USDT]
   output_mode: cli
   update_interval: 86400
