@@ -1,5 +1,10 @@
 . ~/.bash_profile
 
+#git upudate
+git reset --hard 
+git fetch upstream
+git pull
+
 #activate conda env
 source ~/miniconda3/bin/activate
 
