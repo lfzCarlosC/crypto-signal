@@ -13,6 +13,7 @@ from tenacity import RetryError
 
 from analysis import StrategyAnalyzer
 from outputs import Output
+from harmonic_smc_scanner_236 import scan_harmonic_smc
 
 import numpy as np
 from collections import defaultdict
@@ -191,6 +192,68 @@ class Behaviour():
             return market_pair.split('/')[0] + '/' + market_pair.split(':')[-1]
 
         return market_pair
+
+    def _prepare_harmonic_ohlcv(self, ohlcv):
+        harmonic_ohlcv = ohlcv.copy()
+        if 'timestamp' not in harmonic_ohlcv.columns:
+            harmonic_ohlcv = harmonic_ohlcv.reset_index()
+            if 'datetime' in harmonic_ohlcv.columns:
+                harmonic_ohlcv = harmonic_ohlcv.rename(columns={'datetime': 'timestamp'})
+            elif 'index' in harmonic_ohlcv.columns:
+                harmonic_ohlcv = harmonic_ohlcv.rename(columns={'index': 'timestamp'})
+
+        required_columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        missing_columns = [col for col in required_columns if col not in harmonic_ohlcv.columns]
+        if missing_columns:
+            raise ValueError("OHLCV missing columns for harmonic scan: " + ",".join(missing_columns))
+
+        harmonic_ohlcv = harmonic_ohlcv[required_columns].copy()
+        for col in ['open', 'high', 'low', 'close', 'volume']:
+            harmonic_ohlcv[col] = harmonic_ohlcv[col].astype(float)
+        return harmonic_ohlcv
+
+    def _scan_harmonic_signal(self, ohlcv):
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+        timeframe = {
+            '4h': '4h',
+            'd': '1d',
+            'w': '1w'
+        }.get(candle_period, candle_period)
+        return scan_harmonic_smc(self._prepare_harmonic_ohlcv(ohlcv), timeframe)
+
+    def _format_harmonic_dingtalk_message(self, market_pair, harmonic_signal):
+        def fmt(value):
+            if value is None:
+                return 'n/a'
+            return format(float(value), '.8f').rstrip('0').rstrip('.')
+
+        return "\n".join([
+            "谐波信号",
+            "交易对: " + market_pair,
+            "周期: " + str(harmonic_signal.get('timeframe')),
+            "方向: " + str(harmonic_signal.get('direction')),
+            "形态: " + str(harmonic_signal.get('pattern')),
+            "等级: " + str(harmonic_signal.get('grade')),
+            "Entry: " + fmt(harmonic_signal.get('entry')),
+            "Stop: " + fmt(harmonic_signal.get('stop_loss')),
+            "TP1: " + fmt(harmonic_signal.get('target1')) + " RR=" + str(harmonic_signal.get('rr1')),
+            "TP2: " + fmt(harmonic_signal.get('target2')) + " RR=" + str(harmonic_signal.get('rr2')),
+            "XABCD: X=" + fmt(harmonic_signal.get('x_price')) +
+            " A=" + fmt(harmonic_signal.get('a_price')) +
+            " B=" + fmt(harmonic_signal.get('b_price')) +
+            " C=" + fmt(harmonic_signal.get('c_price')) +
+            " D=" + fmt(harmonic_signal.get('d_price')),
+            "D点时间: " + str(harmonic_signal.get('d_bar_time')),
+            "置信: " + str(harmonic_signal.get('confidence')),
+        ])
+
+    def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal):
+        criteria_type = "谐波形态-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
+        self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
+        self.toDb(criteria_type, exchange, market_pair)
+        self.notifier.notify_dingtalk_message(
+            self._format_harmonic_dingtalk_message(market_pair, harmonic_signal)
+        )
                 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
@@ -310,20 +373,20 @@ class Behaviour():
                     intersectionValueAndMin = [0, 0]
 
                     goldenForkMacd = None
-                    if not (len(macd) == 0 \
-                            or len(macd_signal) == 0 \
-                            or len(delta_macd) == 0):
+                    # if not (len(macd) == 0 \
+                    #         or len(macd_signal) == 0 \
+                    #         or len(delta_macd) == 0):
 
-                      goldenForkMacd = (
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
+                      # goldenForkMacd = (
+                      #   (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
+                      #
+                      #   (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin))
+                      #
+                      # )
 
-                        (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin))
-                      
-                      )
-
-                      macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
-                                delta_macd[len(delta_macd) - 2] >= 0) and (delta_macd[len(delta_macd) - 1] >= (
-                                delta_macd[len(delta_macd) - 2] * 3))
+                      # macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
+                      #           delta_macd[len(delta_macd) - 2] >= 0) and (delta_macd[len(delta_macd) - 1] >= (
+                      #           delta_macd[len(delta_macd) - 2] * 3))
 
                     ############################################## goldenForkKdj
                     # len_k = len(kt)
@@ -336,9 +399,9 @@ class Behaviour():
                     # )
 
                     ############################################# dmi
-                    lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
-                    lastNDIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 5)
-                    lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 5)
+                    # lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
+                    # lastNDIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 5)
+                    # lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 5)
 
                     ############################################# macdBottomDivergence
                     # hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
@@ -494,47 +557,16 @@ class Behaviour():
                         # if (stochrsi_goldenfork and macdIsDecreased):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd下跌量能减弱",
                         #                      indicatorTypeCoinMap)
-                    
-                        indices, prices, dirs, ratios = self.pine_zigzag_exact(high, low, length=2, deviation=0, max_size=30)
-                        if (self.isCrabPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "螃蟹形态", indicatorTypeCoinMap)
-                            self.toDb("螃蟹形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "螃蟹形态", market_pair)
-                        
-                        if (self.isDeepCrabPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "deep螃蟹形态", indicatorTypeCoinMap)
-                            self.toDb("deep螃蟹形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "deep螃蟹形态", market_pair)
-                        
-                        if (self.isButterflyPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "蝴蝶形态", indicatorTypeCoinMap)
-                            self.toDb("蝴蝶形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "蝴蝶形态", market_pair)
-
-                        if (self.isBatPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "蝙蝠形态", indicatorTypeCoinMap)
-                            self.toDb("蝙蝠形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "蝙蝠形态", market_pair)
-
-                        if (self.isGartleyPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "加特利形态", indicatorTypeCoinMap)
-                            self.toDb("加特利形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "加特利形态", market_pair)
-
-                        if (self.isSharkPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "鲨鱼形态", indicatorTypeCoinMap)
-                            self.toDb("鲨鱼形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "鲨鱼形态", market_pair)
-
-                        if (self.isCypherPattern(opened, close, low, high, indices, prices, ratios)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "Cypher形态", indicatorTypeCoinMap)
-                            self.toDb("Cypher形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "Cypher形态", market_pair)
-
-                        if (self.isDoublePattern(high, low, indices, prices, dirs)):
-                            self.printResult(new_result, exchange, market_pair, output_mode, "DB DT形态", indicatorTypeCoinMap)
-                            self.toDb("DB DT形态", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "DB DT形态", market_pair)
+                        harmonic_signal = self._scan_harmonic_signal(ohlcv)
+                        if harmonic_signal:
+                            self._emit_harmonic_signal(
+                                new_result,
+                                exchange,
+                                market_pair,
+                                output_mode,
+                                indicatorTypeCoinMap,
+                                harmonic_signal
+                            )
 
                         # if (self.isThreeDrivesPattern(opened, close, low, high, indices, prices, ratios)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "ThreeDrives形态", indicatorTypeCoinMap)
@@ -899,30 +931,29 @@ class Behaviour():
         td12PositiveFlag = False
         td12NegativeFlag = False
 
-
-        if ((td[len(td) - 1] in (8,8.0)) or (td[len(td) - 2] in (8,8.0))):
+        if ((td.iloc[-1] in (8, 8.0)) or (td.iloc[-2] in (8, 8.0))):
             td8PositiveFlag = True;
 
-        if ((td[len(td) - 1] in (-8,-8.0)) or (td[len(td) - 2] in (-8,-8.0))):
-            td8NegativeFlag = True;
-        
-        if ((td[len(td) - 1] in (9,9.0)) or (td[len(td) - 2] in (9,9.0))):
-            td9PositiveFlag = True;
+        if ((td.iloc[-1] in (-8, -8.0)) or (td.iloc[-2] in (-8, -8.0))):
+            td8NegativeFlag = True
 
-        if ((td[len(td) - 1] in (-9,-9.0)) or (td[len(td) - 2] in (-9,-9.0))):
-            td9NegativeFlag = True;
+        if ((td.iloc[-1] in (9, 9.0)) or (td.iloc[-2] in (9, 9.0))):
+            td9PositiveFlag = True
 
-        if ((td[len(td) - 1] in (12, 12.0)) or (td[len(td) - 2] in (12, 12.0))):
-            td12PositiveFlag = True;
+        if ((td.iloc[-1] in (-9, -9.0)) or (td.iloc[-2] in (-9, -9.0))):
+            td9NegativeFlag = True
 
-        if ((td[len(td) - 1] in (-12, -12.0)) or (td[len(td) - 2] in (-12, -12.0))):
-            td12NegativeFlag = True;
-        
-        if ((td[len(td) - 1] in (13, 13.0)) or (td[len(td) - 2] in (13, 13.0))):
-            td13PositiveFlag = True;
+        if ((td.iloc[-1] in (12, 12.0)) or (td.iloc[-2] in (12, 12.0))):
+            td12PositiveFlag = True
 
-        if ((td[len(td) - 1] in (-13, -13.0)) or (td[len(td) - 2] in (-13, -13.0))):
-            td13NegativeFlag = True;
+        if ((td.iloc[-1] in (-12, -12.0)) or (td.iloc[-2] in (-12, -12.0))):
+            td12NegativeFlag = True
+
+        if ((td.iloc[-1] in (13, 13.0)) or (td.iloc[-2] in (13, 13.0))):
+            td13PositiveFlag = True
+
+        if ((td.iloc[-1] in (-13, -13.0)) or (td.iloc[-2] in (-13, -13.0))):
+            td13NegativeFlag = True
 
         return td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag;
 

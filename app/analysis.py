@@ -63,7 +63,6 @@ class StrategyAnalyzer():
             'ema60': ema.EMA().analyze,
             # 'ema120': ema.EMA().analyze,
             # 'ema365': ema.EMA().analyze,
-            'vwap': vwap.VWAP().analyze,
             'bollinger_bands': bollinger_bands.Bollinger().analyze,
             'ohlcv': ohlcv.OHLCV().analyze
         }

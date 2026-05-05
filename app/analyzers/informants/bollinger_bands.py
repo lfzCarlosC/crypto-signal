@@ -44,9 +44,9 @@ class Bollinger(IndicatorUtils):
 
             for index in range(period_count, bb_df_size):
                 data_index = index - period_count
-                bb_values['lowerband'][index] = bb_data[0][data_index]
-                bb_values['middleband'][index] = bb_data[1][data_index]
-                bb_values['upperband'][index] = bb_data[2][data_index]
+                bb_values.loc[index, 'lowerband'] = bb_data[0][data_index]
+                bb_values.loc[index, 'middleband'] = bb_data[1][data_index]
+                bb_values.loc[index, 'upperband'] = bb_data[2][data_index]
 
         bb_values.dropna(how='all', inplace=True)
 

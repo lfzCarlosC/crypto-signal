@@ -61,8 +61,8 @@ class KDJ(IndicatorUtils):
         heap_high = []
         heap_low = []
         for i in range(len(prices)):
-            heapq.heappush(heap_high, -prices['high'][i])
-            heapq.heappush(heap_low, prices['low'][i])
+            heapq.heappush(heap_high, -prices['high'].iloc[i])
+            heapq.heappush(heap_low, prices['low'].iloc[i])
             if i>=l:
                 heap_high.remove(-prices['high'][i-l])
                 heap_low.remove(prices['low'][i-l])

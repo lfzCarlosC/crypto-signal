@@ -219,6 +219,10 @@ class Notifier():
         if market_pair in ['BTC/USDT', 'ETH/USDT']:
             self.dingtalk(message + " - " + market_pair + " - " + title, self.webhook)
 
+    def notify_dingtalk_message(self, message):
+        if message and message.strip():
+            self.dingtalk(message.strip(), self.webhook)
+
     def dingtalk(self, msg, webhook):
         headers = {'Content-Type': 'application/json; charset=utf-8'}
         prefix = "ding "
