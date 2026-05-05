@@ -254,7 +254,7 @@ notifiers:
 settings:
   log_level: INFO
   log_mode: text
-  market_pairs: [ALGO/USDT]
+  market_pairs:  [BTC/USDT,ETH/USDT,SOL/USDT]
   output_mode: cli
   update_interval: 259200
   
