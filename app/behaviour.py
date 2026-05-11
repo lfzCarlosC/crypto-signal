@@ -222,12 +222,16 @@ class Behaviour():
         return scan_harmonic_smc(self._prepare_harmonic_ohlcv(ohlcv), timeframe)
 
     def _format_harmonic_dingtalk_message(self, market_pair, harmonic_signal):
+        price_decimals = 3 if str(market_pair).upper().startswith('ETC/') else None
+
         def fmt(value):
             if value is None:
                 return 'n/a'
+            if price_decimals is not None:
+                return format(float(value), '.' + str(price_decimals) + 'f')
             return format(float(value), '.8f').rstrip('0').rstrip('.')
 
-        return "\n".join([
+        lines = [
             "谐波信号",
             "交易对: " + market_pair,
             "周期: " + str(harmonic_signal.get('timeframe')),
@@ -245,10 +249,36 @@ class Behaviour():
             " D=" + fmt(harmonic_signal.get('d_price')),
             "D点时间: " + str(harmonic_signal.get('d_bar_time')),
             "置信: " + str(harmonic_signal.get('confidence')),
-        ])
+        ]
+
+        if harmonic_signal.get('multi_harmonic'):
+            detail = harmonic_signal.get('multi_harmonic_detail', {})
+
+            def fmt_xabcd(values):
+                values = values or []
+                labels = ['X', 'A', 'B', 'C', 'D']
+                return " ".join([
+                    labels[i] + "=" + fmt(values[i])
+                    for i in range(min(len(labels), len(values)))
+                ])
+
+            def fmt_direction(direction):
+                return ('多' if direction == 'LONG' else '空') + "/" + str(direction)
+
+            lines += [
+                "多谐波: " +
+                str(detail.get('previous_pattern')) + "(" + fmt_direction(detail.get('previous_direction')) + ")" +
+                " -> " +
+                str(detail.get('current_pattern')) + "(" + fmt_direction(detail.get('current_direction')) + ")",
+                "原谐波XABCD: " + fmt_xabcd(detail.get('previous_xabcd')),
+                "现在谐波XABCD: " + fmt_xabcd(detail.get('current_xabcd')),
+            ]
+
+        return "\n".join(lines)
 
     def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal):
-        criteria_type = "谐波形态-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
+        criteria_prefix = "多谐波形态" if harmonic_signal.get('multi_harmonic') else "谐波形态"
+        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
         self.toDb(criteria_type, exchange, market_pair)
         self.notifier.notify_dingtalk_message(

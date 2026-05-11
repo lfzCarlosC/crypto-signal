@@ -32,8 +32,6 @@ Harmonic + SMC Scanner  (v2)
   HARMONIC_DB_MAX_RRP   = 40    # DB/DT 的最大 riskPerReward%（同 Pine MaxRiskPerReward）
 """
 
-from __future__ import annotations
-
 import time
 import datetime
 import sys
@@ -424,58 +422,6 @@ def detect_abcd_pattern(prices: list, indices: list | None = None, err_pct: floa
             0.618 * err_min <= abc <= 0.786 * err_max):
         return "ABCD Ext", is_bull
     return None
-
-
-def _is_overextended_harmonic(prices5: list) -> bool:
-    if len(prices5) < 5:
-        return True
-    xa = abs(prices5[1] - prices5[0]) + 1e-10
-    bd = abs(prices5[4] - prices5[2])
-    cd = abs(prices5[4] - prices5[3])
-    return bd > xa * 2.0 or cd > xa * 2.0
-
-
-def detect_multi_xabcd(prices: list, indices: list, err_pct: float,
-                       latest_closed_idx: int) -> dict:
-    """
-    检测紧邻双 XABCD：
-      前一组 XABCD 的 D 点 == 当前 XABCD 的 X 点；
-      当前 XABCD 的 D 点 == 当前 K 线前一根，也就是最新已收线。
-    """
-    if len(prices) < 9 or len(indices) < 9:
-        return {"found": False}
-
-    current_prices = list(prices[-5:])
-    current_indices = list(indices[-5:])
-    if int(current_indices[-1]) != int(latest_closed_idx):
-        return {"found": False}
-
-    current_result = detect_harmonic(current_prices, indices=current_indices, err_pct=err_pct)
-    if current_result is None or _is_overextended_harmonic(current_prices):
-        return {"found": False}
-
-    previous_prices = list(prices[-9:-4])
-    previous_indices = list(indices[-9:-4])
-    if int(previous_indices[-1]) != int(current_indices[0]):
-        return {"found": False}
-
-    previous_result = detect_harmonic(previous_prices, indices=previous_indices, err_pct=err_pct)
-    if previous_result is None or _is_overextended_harmonic(previous_prices):
-        return {"found": False}
-
-    previous_pattern, previous_is_bull = previous_result
-    current_pattern, current_is_bull = current_result
-    return {
-        "found": True,
-        "previous_pattern": previous_pattern,
-        "previous_direction": "LONG" if previous_is_bull else "SHORT",
-        "previous_xabcd": [float(v) for v in previous_prices],
-        "previous_indices": [int(v) for v in previous_indices],
-        "current_pattern": current_pattern,
-        "current_direction": "LONG" if current_is_bull else "SHORT",
-        "current_xabcd": [float(v) for v in current_prices],
-        "current_indices": [int(v) for v in current_indices],
-    }
 
 
 # ── PRZ质量评分 ───────────────────────────────────
@@ -1101,8 +1047,13 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
 
     # 保守模式：最后一个 pivot 需有 D 点之后一根“已收线 K”做颜色翻转确认。
     # 顺势模式：不需要这根确认K，直接使用最新已完成 D 点。
-    confirmed_prices = prices
-    confirmed_indices = indices
+    last_pivot_confirmed = is_last_pivot_confirmed(zigzag_df, indices, dirs)
+    if (not require_pivot_confirmation) or last_pivot_confirmed:
+        confirmed_prices = prices
+        confirmed_indices = indices
+    else:
+        confirmed_prices = prices[:-1]
+        confirmed_indices = indices[:-1]
     if len(confirmed_prices) < 4:
         return None
 
@@ -1114,6 +1065,7 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
     c_val = None
     x_idx_zz = 0
     a_idx_zz = 0
+    b_idx_zz = 0
     c_idx_zz = int(confirmed_indices[-2])
 
     if len(confirmed_prices) >= 5:
@@ -1124,6 +1076,8 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         c_val = float(p5[3])
         x_idx_zz = int(confirmed_indices[-5])  # X点在df中的索引
         a_idx_zz = int(confirmed_indices[-4])  # A点在df中的索引
+        b_idx_zz = int(confirmed_indices[-3])
+        c_idx_zz = int(confirmed_indices[-2])
 
         # ── 2. 核心检测：先判已确认的 XABCD 谐波 ──
         xabcd_result = detect_harmonic(
@@ -1209,9 +1163,17 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
     d_bar_idx = int(confirmed_indices[-1])
     pattern_family = "ABCD-family" if pattern_name in {"ABCD", "AB=CD", "ABCD Ext"} else "XABCD-family"
     latest_closed_idx = len(zigzag_df) - 1
-    multi_xabcd = detect_multi_xabcd(
-        confirmed_prices, confirmed_indices, HARMONIC_ERROR_PCT, latest_closed_idx
-    ) if pattern_family == "XABCD-family" else {"found": False}
+
+    # XABCD 下单时机收紧：
+    # 1. 有父级顺势时，不等确认，D 必须是最新一根已完成K；
+    # 2. 无父级时，最多只允许 D 后一根确认K，不能拖到更后面。
+    if pattern_family == "XABCD-family":
+        if require_pivot_confirmation:
+            if (not last_pivot_confirmed) or d_bar_idx != latest_closed_idx - 1:
+                return None
+        else:
+            if d_bar_idx != latest_closed_idx:
+                return None
 
     if abs(current_price - d_price) > atr * 3:
         log_scan_skip(
@@ -1360,16 +1322,23 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         "confidence": f"SMC {smc_score}/7  PRZ {prz_score}/4 | {' '.join(conf_parts)}",
         "conf_parts": conf_parts, "atr": float(atr), "price": float(current_price),
         "entry_d_range": entry_win["d_range"], "trigger_bar": entry_win["trigger_bar"],
-        "multi_harmonic": bool(multi_xabcd.get("found")),
-        "multi_harmonic_detail": multi_xabcd,
         "x_price": float(x_val) if x_val else None,
         "a_price": float(a_val) if a_val else None,
         "b_price": float(b_val) if b_val is not None else None,
+        "x_bar_idx": int(x_idx_zz) if pattern_family == "XABCD-family" else None,
+        "a_bar_idx": int(a_idx_zz) if pattern_family == "XABCD-family" else None,
+        "b_bar_idx": int(b_idx_zz) if pattern_family == "XABCD-family" else None,
+        "c_bar_idx": int(c_idx_zz) if pattern_family == "XABCD-family" else None,
+        "x_bar_time": str(zigzag_df["timestamp"].iloc[x_idx_zz]) if pattern_family == "XABCD-family" else None,
+        "a_bar_time": str(zigzag_df["timestamp"].iloc[a_idx_zz]) if pattern_family == "XABCD-family" else None,
+        "b_bar_time": str(zigzag_df["timestamp"].iloc[b_idx_zz]) if pattern_family == "XABCD-family" else None,
+        "c_bar_time": str(zigzag_df["timestamp"].iloc[c_idx_zz]) if pattern_family == "XABCD-family" else None,
         "cd_len": entry_win.get("cd_len", 0),
         "c_price": float(c_val if c_val is not None else c_price_for_entry)
                    if (c_val is not None or c_price_for_entry is not None) else None,
         "cd_price_len": float(cd_price_len),
         "d_bar_time": str(zigzag_df["timestamp"].iloc[d_bar_idx]),
+        "pivot_confirmed": last_pivot_confirmed,
         "require_pivot_confirmation": require_pivot_confirmation,
         "raw_last5": [round(float(v), 8) for v in prices[-5:]],
         "confirmed_last5": [round(float(v), 8) for v in confirmed_prices[-5:]],
@@ -1485,7 +1454,16 @@ def format_signal(sig: dict) -> str:
                 f"cd={pf(sig.get('cd_price_len',0))})"
             )
     if sig.get("entry_plan_text"):
-        trade_lines.append(f"  Legs    : {sig['entry_plan_text']}")
+        if sig.get("sniper_legs"):
+            trade_lines.append("  Legs    :")
+            for leg in sig["sniper_legs"]:
+                trade_lines.append(
+                    f"    {leg.get('name', 'Sniper')}: "
+                    f"Entry={pf(leg.get('entry'))} TP={pf(leg.get('target'))} "
+                    f"数量={leg.get('size', '?')} RR={leg.get('rr', '?')}R"
+                )
+        else:
+            trade_lines.append(f"  Legs    : {sig['entry_plan_text']}")
     trade_lines.append(
         "  XABCD   : "
         f"X={pf(sig.get('x_price')) if sig.get('x_price') is not None else 'n/a'}  "
