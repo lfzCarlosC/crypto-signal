@@ -1103,11 +1103,10 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
     # 顺势模式：不需要这根确认K，直接使用最新已完成 D 点。
     confirmed_prices = prices
     confirmed_indices = indices
-    if len(confirmed_prices) < 4:
+    if len(confirmed_prices) < 5:
         return None
 
     xabcd_result = None
-    abcd_result = None
     a_val = 0.0
     x_val = 0.0
     b_val = None
@@ -1139,21 +1138,6 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
             if _bd > _xa * 2.0 or _cd > _xa * 2.0:
                 xabcd_result = None
 
-    if xabcd_result is None and len(prices) >= 5:
-        if require_pivot_confirmation:
-            abcd_prices = prices[:-1]
-            abcd_indices = indices[:-1]
-        else:
-            abcd_prices = prices
-            abcd_indices = indices
-        p4 = list(abcd_prices[-4:])
-        a_val = float(p4[0])
-        b_val = float(p4[1])
-        c_val = float(p4[2])
-        abcd_result = detect_abcd_pattern(
-            abcd_prices, indices=abcd_indices, err_pct=HARMONIC_ERROR_PCT
-        )
-
     # db_result = detect_double_pattern(
     #     prices=prices,
     #     dirs=dirs,
@@ -1178,11 +1162,9 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
     #     is_bull = False
     #     pattern_name = "DoubleTop"
 
-    # 3. 如果没双底双顶，再看有没有谐波
+    # 3. 只扫描 XABCD 谐波，不再回退扫描 ABCD 家族。
     if xabcd_result is not None:
         pattern_name, is_bull = xabcd_result
-    elif abcd_result is not None:
-        pattern_name, is_bull = abcd_result
 
     # 4. 判定 has_double 状态（保持你后续逻辑需要的变量名）
     # has_db = (db_result["type"] == "DB" and is_bull)
@@ -1207,7 +1189,7 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
 
     d_price = float(confirmed_prices[-1])
     d_bar_idx = int(confirmed_indices[-1])
-    pattern_family = "ABCD-family" if pattern_name in {"ABCD", "AB=CD", "ABCD Ext"} else "XABCD-family"
+    pattern_family = "XABCD-family"
     latest_closed_idx = len(zigzag_df) - 1
     multi_xabcd = detect_multi_xabcd(
         confirmed_prices, confirmed_indices, HARMONIC_ERROR_PCT, latest_closed_idx
