@@ -23,6 +23,7 @@ Harmonic + SMC Scanner  (v2)
 可调参数 (HARMONIC_* 前缀)：
   HARMONIC_ERROR_PCT    = 10
   HARMONIC_ZZ_LENGTH    = 2
+  HARMONIC_DAILY_ZZ_LENGTH = 8
   HARMONIC_ZZ_SIZE      = 40
   HARMONIC_PRZ_BUFFER   = 0.003
   HARMONIC_SL_BUFFER    = 0.002
@@ -61,6 +62,7 @@ TF_FETCH_LIMIT = {
 # 谐波参数
 HARMONIC_ERROR_PCT  = 10
 HARMONIC_ZZ_LENGTH  = 2
+HARMONIC_DAILY_ZZ_LENGTH = 8
 HARMONIC_ZZ_SIZE    = 40
 HARMONIC_PRZ_BUFFER = 0.003
 HARMONIC_SL_BUFFER  = 0.002
@@ -74,6 +76,11 @@ HARMONIC_STOP_RR      = 1.2  # 用 TP1 反推初始止损，默认 1:1.2
 HARMONIC_TP1_STOP_FRAC = 0.5 # 额外止损约束：TP1距离的 0.5 位置
 ENTRY_D_GAP_FILTER_TFS = {"30m", "1h"}
 ENTRY_D_GAP_MAX_PCT    = 0.005  # 0.5%
+
+
+def resolve_harmonic_zz_length(timeframe: str) -> int:
+    normalized_timeframe = str(timeframe).strip().lower()
+    return HARMONIC_DAILY_ZZ_LENGTH if normalized_timeframe in {"d", "1d"} else HARMONIC_ZZ_LENGTH
 
 # 颜色
 RESET   = "\033[0m";  RED    = "\033[91m"; GREEN  = "\033[92m"
@@ -1095,8 +1102,9 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
     zone, zone_pct = get_zone(current_price, df=df)
 
     # ── 1. ZigZag 计算 ──
+    zz_length = resolve_harmonic_zz_length(timeframe)
     indices, prices, dirs, _ = get_pine_zigzag(
-        zigzag_df, length=HARMONIC_ZZ_LENGTH, max_size=HARMONIC_ZZ_SIZE
+        zigzag_df, length=zz_length, max_size=HARMONIC_ZZ_SIZE
     )
 
     # 保守模式：最后一个 pivot 需有 D 点之后一根“已收线 K”做颜色翻转确认。
