@@ -9,6 +9,7 @@ import redis
 import structlog
 from ccxt import ExchangeError
 import ccxt
+from mysql.connector import pooling
 from tenacity import RetryError
 
 from analysis import StrategyAnalyzer
@@ -54,11 +55,14 @@ class Behaviour():
         "cci over 100": "green"
     }
 
-    mydb = mysql.connector.connect(
-        host="127.0.0.1",  # 数据库主机地址
-        user="root",  # 数据库用户名
-        passwd="",  # 数据库密码
-        database = "cs"
+    # 初始化连接池，起名叫 "my_pool"，允许最多维持 5 个长连接
+    db_pool = pooling.MySQLConnectionPool(
+        pool_name="my_pool",
+        pool_size=5,  # 连接池大小，根据并发量调整
+        host="127.0.0.1",
+        user="root",
+        passwd="",
+        database="cs"
     )
 
     def __init__(self, config, exchange_interface, notifier):
@@ -1343,6 +1347,9 @@ class Behaviour():
             )
 
     def toDb(self, td_name, exchange, market_pair):
+        # 1. 效率极高：不建新连接，直接从连接池里捞一个现成的可用连接
+        mydb = self.db_pool.get_connection()
+
         candle_period = self.indicator_conf['macd'][0]['candle_period'];
         sql = "INSERT INTO td(td_name, market_pair, candle_period, exchange, create_date) " \
               "select distinct %s,%s,%s,%s,%s from dual where not exists( select 1 from td " \
@@ -1350,9 +1357,16 @@ class Behaviour():
               "and create_date >= date_sub(%s, interval 10 day) and create_date <= %s)"
         val = (td_name, self.exchange_interface.get_name_by_market_pair(market_pair), candle_period, exchange, date.today(),
                td_name, self.exchange_interface.get_name_by_market_pair(market_pair), candle_period, exchange, date.today(), date.today())
-        Behaviour.mydb.cursor().execute(sql, val)
-        Behaviour.mydb.commit()  # 数据表内容有更新，必须使用到该语句
-        print(Behaviour.mydb.cursor().rowcount, "记录插入成功。")
+
+        # 2. 使用 with 自动管理 cursor 和 connection 的关闭
+        try:
+            with mydb.cursor() as cursor:
+                cursor.execute(sql, val)
+                mydb.commit()
+                print(cursor.rowcount, "记录插入成功。")  # 💡 注意：直接用当前的 cursor 即可
+        finally:
+            mydb.close()  # 💡 确保连接一定会被释放回 MySQL
+
 
     def lastNMacdsArePositive(self, delta_macd, macd, n):
         (result, min) = self.lastNMinusMacdVolume(macd)
