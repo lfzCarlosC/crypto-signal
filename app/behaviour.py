@@ -188,8 +188,8 @@ class Behaviour():
             return True;
 
         if marketPairFlag == 'usd/btc':
-            return  ( market_pair.lower().endswith("usdt") ) \
-               and (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w', '15m', '30m', '5m']);
+            return  (( market_pair.lower().endswith("usdt") ) and
+                     (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w']));
     
     def postProcessPair(self, market_pair):
         if ':' in market_pair:
@@ -502,7 +502,6 @@ class Behaviour():
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
                                 self.notifier.notify_dingtalk(new_result, "TD+底部2B信号", market_pair)
 
-
                         # if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
                         #     self.toDb("0轴上macd金叉信号", exchange, market_pair)
@@ -591,6 +590,7 @@ class Behaviour():
                         # if (stochrsi_goldenfork and macdIsDecreased):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd下跌量能减弱",
                         #                      indicatorTypeCoinMap)
+
                         harmonic_signal = self._scan_harmonic_signal(ohlcv)
                         if harmonic_signal:
                             self._emit_harmonic_signal(
