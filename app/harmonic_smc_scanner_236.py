@@ -61,7 +61,7 @@ TF_FETCH_LIMIT = {
 
 # 谐波参数
 HARMONIC_ERROR_PCT  = 10
-HARMONIC_ZZ_LENGTH  = 2
+HARMONIC_ZZ_LENGTH  = [2,3,4,5,6,7,8]
 HARMONIC_DAILY_ZZ_LENGTH = 8
 HARMONIC_ZZ_SIZE    = 40
 HARMONIC_PRZ_BUFFER = 0.003
@@ -80,7 +80,7 @@ ENTRY_D_GAP_MAX_PCT    = 0.005  # 0.5%
 
 def resolve_harmonic_zz_length(timeframe: str) -> int:
     normalized_timeframe = str(timeframe).strip().lower()
-    return HARMONIC_DAILY_ZZ_LENGTH if normalized_timeframe in {"d", "1d"} else HARMONIC_ZZ_LENGTH
+    return HARMONIC_ZZ_LENGTH
 
 # 颜色
 RESET   = "\033[0m";  RED    = "\033[91m"; GREEN  = "\033[92m"
@@ -1102,273 +1102,274 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
     zone, zone_pct = get_zone(current_price, df=df)
 
     # ── 1. ZigZag 计算 ──
-    zz_length = resolve_harmonic_zz_length(timeframe)
-    indices, prices, dirs, _ = get_pine_zigzag(
-        zigzag_df, length=zz_length, max_size=HARMONIC_ZZ_SIZE
-    )
-
-    # 保守模式：最后一个 pivot 需有 D 点之后一根“已收线 K”做颜色翻转确认。
-    # 顺势模式：不需要这根确认K，直接使用最新已完成 D 点。
-    confirmed_prices = prices
-    confirmed_indices = indices
-    if len(confirmed_prices) < 5:
-        return None
-
-    xabcd_result = None
-    a_val = 0.0
-    x_val = 0.0
-    b_val = None
-    c_val = None
-    x_idx_zz = 0
-    a_idx_zz = 0
-    c_idx_zz = int(confirmed_indices[-2])
-
-    if len(confirmed_prices) >= 5:
-        p5 = confirmed_prices[-5:]
-        x_val = float(p5[0])
-        a_val = float(p5[1])  # A点
-        b_val = float(p5[2])
-        c_val = float(p5[3])
-        x_idx_zz = int(confirmed_indices[-5])  # X点在df中的索引
-        a_idx_zz = int(confirmed_indices[-4])  # A点在df中的索引
-
-        # ── 2. 核心检测：先判已确认的 XABCD 谐波 ──
-        xabcd_result = detect_harmonic(
-            confirmed_prices, indices=confirmed_indices, err_pct=HARMONIC_ERROR_PCT
+    zz_all_length = resolve_harmonic_zz_length(timeframe)
+    for zz_length in zz_all_length:
+        indices, prices, dirs, _ = get_pine_zigzag(
+            zigzag_df, length=zz_length, max_size=HARMONIC_ZZ_SIZE
         )
 
-        # ── 过延伸过滤：BD/CD 任一段 > XA×2 则跳过（图三 Crab 类型误报） ──
+        # 保守模式：最后一个 pivot 需有 D 点之后一根“已收线 K”做颜色翻转确认。
+        # 顺势模式：不需要这根确认K，直接使用最新已完成 D 点。
+        confirmed_prices = prices
+        confirmed_indices = indices
+        if len(confirmed_prices) < 5:
+            return None
+
+        xabcd_result = None
+        a_val = 0.0
+        x_val = 0.0
+        b_val = None
+        c_val = None
+        x_idx_zz = 0
+        a_idx_zz = 0
+        c_idx_zz = int(confirmed_indices[-2])
+
+        if len(confirmed_prices) >= 5:
+            p5 = confirmed_prices[-5:]
+            x_val = float(p5[0])
+            a_val = float(p5[1])  # A点
+            b_val = float(p5[2])
+            c_val = float(p5[3])
+            x_idx_zz = int(confirmed_indices[-5])  # X点在df中的索引
+            a_idx_zz = int(confirmed_indices[-4])  # A点在df中的索引
+
+            # ── 2. 核心检测：先判已确认的 XABCD 谐波 ──
+            xabcd_result = detect_harmonic(
+                confirmed_prices, indices=confirmed_indices, err_pct=HARMONIC_ERROR_PCT
+            )
+
+            # ── 过延伸过滤：BD/CD 任一段 > XA×2 则跳过（图三 Crab 类型误报） ──
+            if xabcd_result is not None:
+                _p = confirmed_prices[-5:]
+                _xa = abs(_p[1] - _p[0]) + 1e-10
+                _bd = abs(_p[4] - _p[2])
+                _cd = abs(_p[4] - _p[3])
+                if _bd > _xa * 2.0 or _cd > _xa * 2.0:
+                    xabcd_result = None
+
+        # db_result = detect_double_pattern(
+        #     prices=prices,
+        #     dirs=dirs,
+        #     bars_indices=indices,
+        #     max_risk_per_reward=HARMONIC_DB_MAX_RRP  # 使用配置中的参数
+        # )
+        # if db_result["type"] is not None:
+        #     # 假设你的 detect_double_pattern 返回了 D 点索引，如果没有，默认用最后一根
+        #     target_idx = db_result.get("d_bar_idx", len(df) - 1)
+        # else:
+        target_idx = len(zigzag_df) - 1
+
+
+        pattern_name = None
+        is_bull = False
+
+        # 2. 优先级判定：优先处理双底/双顶（因为你要解决 DB/DT 的过滤问题）
+        # if db_result["type"] == "DB":
+        #     is_bull = True
+        #     pattern_name = "DoubleBottom"
+        # elif db_result["type"] == "DT":
+        #     is_bull = False
+        #     pattern_name = "DoubleTop"
+
+        # 3. 只扫描 XABCD 谐波，不再回退扫描 ABCD 家族。
         if xabcd_result is not None:
-            _p = confirmed_prices[-5:]
-            _xa = abs(_p[1] - _p[0]) + 1e-10
-            _bd = abs(_p[4] - _p[2])
-            _cd = abs(_p[4] - _p[3])
-            if _bd > _xa * 2.0 or _cd > _xa * 2.0:
-                xabcd_result = None
+            pattern_name, is_bull = xabcd_result
 
-    # db_result = detect_double_pattern(
-    #     prices=prices,
-    #     dirs=dirs,
-    #     bars_indices=indices,
-    #     max_risk_per_reward=HARMONIC_DB_MAX_RRP  # 使用配置中的参数
-    # )
-    # if db_result["type"] is not None:
-    #     # 假设你的 detect_double_pattern 返回了 D 点索引，如果没有，默认用最后一根
-    #     target_idx = db_result.get("d_bar_idx", len(df) - 1)
-    # else:
-    target_idx = len(zigzag_df) - 1
+        # 4. 判定 has_double 状态（保持你后续逻辑需要的变量名）
+        # has_db = (db_result["type"] == "DB" and is_bull)
+        # has_dt = (db_result["type"] == "DT" and not is_bull)
+        # has_double = has_db or has_dt
 
+        # 5. 最终准入：必须有形态
+        if pattern_name is None: #(and not has_double)
+            return None
 
-    pattern_name = None
-    is_bull = False
+        # 6. 保底方向逻辑（用于没有任何形态但需要方向时，或给后续逻辑参考）
+        # 只有在没有确定形态时，才根据 momentum_dir 给 is_bull 赋值
+        if pattern_name is None:
+            momentum_dir = get_local_momentum_direction(zigzag_df, target_idx)
+            is_bull = (momentum_dir == 1)
 
-    # 2. 优先级判定：优先处理双底/双顶（因为你要解决 DB/DT 的过滤问题）
-    # if db_result["type"] == "DB":
-    #     is_bull = True
-    #     pattern_name = "DoubleBottom"
-    # elif db_result["type"] == "DT":
-    #     is_bull = False
-    #     pattern_name = "DoubleTop"
+        # ── 3. 基础过滤（溢价区/D点距离） ──
+        # is_pure_double = "Double" in str(pattern_name)
+        # if not is_pure_double:
+        #     if is_bull and zone == "premium": return None
+        #     if not is_bull and zone == "discount": return None
 
-    # 3. 只扫描 XABCD 谐波，不再回退扫描 ABCD 家族。
-    if xabcd_result is not None:
-        pattern_name, is_bull = xabcd_result
+        d_price = float(confirmed_prices[-1])
+        d_bar_idx = int(confirmed_indices[-1])
+        pattern_family = "XABCD-family"
+        latest_closed_idx = len(zigzag_df) - 1
+        multi_xabcd = detect_multi_xabcd(
+            confirmed_prices, confirmed_indices, HARMONIC_ERROR_PCT, latest_closed_idx
+        ) if pattern_family == "XABCD-family" else {"found": False}
 
-    # 4. 判定 has_double 状态（保持你后续逻辑需要的变量名）
-    # has_db = (db_result["type"] == "DB" and is_bull)
-    # has_dt = (db_result["type"] == "DT" and not is_bull)
-    # has_double = has_db or has_dt
+        if abs(current_price - d_price) > atr * 3:
+            log_scan_skip(
+                f"  [过滤-{timeframe}] {pattern_name} "
+                f"当前价距D={abs(current_price - d_price):.2f} > ATR×3={atr * 3:.2f} "
+                f"price={current_price:.2f} D={d_price:.2f}"
+            )
+            return None
 
-    # 5. 最终准入：必须有形态
-    if pattern_name is None: #(and not has_double)
-        return None
+        # ── 4. 入场窗口过滤 ──
+        # is_pure_double = pattern_name in ["DoubleBottom", "DoubleTop"]
+        #
+        # if is_pure_double:
+        #     # 1. 获取 D 点 K 线（最新枢纽点）的高低点
+        #     # d_bar_idx 是 ZigZag 确定的 D 点索引
+        #     d_high = float(df["high"].iloc[d_bar_idx])
+        #     d_low = float(df["low"].iloc[d_bar_idx])
+        #
+        #     # 2. 计算 50% 的位置作为 Entry
+        #     entry_at_50 = (d_high + d_low) / 2
+        #
+        #     # 3. 强制覆盖 entry_win 逻辑：不检查回踩，直接设为 D 点 K 线的一半位置触发
+        #     entry_win = {
+        #         "triggered": True,
+        #         "entry_price": round(entry_at_50, 2),
+        #         "trigger_bar": d_bar_idx,
+        #         "d_range": round(d_high - d_low, 2)
+        #     }
+        # else:
+        # 如果是普通谐波形态（Bat, Butterfly 等），保留你原来的回踩入场逻辑
+        # 提取C点价格（confirmed_prices[-5:] = [X,A,B,C,D]，C = [-2]）
+        c_price_for_entry = float(confirmed_prices[-2]) if len(confirmed_prices) >= 4 else None
+        cd_price_len = abs(c_price_for_entry - d_price) if c_price_for_entry is not None else 0.0
+        entry_win = check_entry_window(zigzag_df, d_bar_idx, is_bull,
+                                       entry_bars=HARMONIC_ENTRY_BARS + 1,
+                                       c_price=c_price_for_entry)
 
-    # 6. 保底方向逻辑（用于没有任何形态但需要方向时，或给后续逻辑参考）
-    # 只有在没有确定形态时，才根据 momentum_dir 给 is_bull 赋值
-    if pattern_name is None:
-        momentum_dir = get_local_momentum_direction(zigzag_df, target_idx)
-        is_bull = (momentum_dir == 1)
+        # 统一检查是否准入
+        if not entry_win["triggered"]:
+            log_scan_skip(f"  [过滤-{timeframe}] {pattern_name} 入场窗口未触发")
+            return None
 
-    # ── 3. 基础过滤（溢价区/D点距离） ──
-    # is_pure_double = "Double" in str(pattern_name)
-    # if not is_pure_double:
-    #     if is_bull and zone == "premium": return None
-    #     if not is_bull and zone == "discount": return None
+        entry_price = entry_win["entry_price"]
 
-    d_price = float(confirmed_prices[-1])
-    d_bar_idx = int(confirmed_indices[-1])
-    pattern_family = "XABCD-family"
-    latest_closed_idx = len(zigzag_df) - 1
-    multi_xabcd = detect_multi_xabcd(
-        confirmed_prices, confirmed_indices, HARMONIC_ERROR_PCT, latest_closed_idx
-    ) if pattern_family == "XABCD-family" else {"found": False}
+        # D→C 0.786 是计划入场价，不再作为谐波信号准入过滤。
+        # 旧逻辑用 0.236 时这个距离过滤还能成立；改成 0.786 后会误杀 30m/1h 信号。
 
-    if abs(current_price - d_price) > atr * 3:
-        log_scan_skip(
-            f"  [过滤-{timeframe}] {pattern_name} "
-            f"当前价距D={abs(current_price - d_price):.2f} > ATR×3={atr * 3:.2f} "
-            f"price={current_price:.2f} D={d_price:.2f}"
-        )
-        return None
+        # ── 5. SMC 确认项与评分 ──
+        has_sweep = check_sweep_at_d(zigzag_df, d_price, is_bull, atr, n=HARMONIC_SWEEP_BARS)
+        obs = find_obs_near_d(zigzag_df, d_price, atr)
+        ob_match = [o for o in obs if o["type"] == ("bullish" if is_bull else "bearish")]
+        has_fvg = check_fvg_after_d(zigzag_df, d_bar_idx, is_bull)
+        has_choch = check_choch_at_d(zigzag_df, d_bar_idx, is_bull, lookback=8)
 
-    # ── 4. 入场窗口过滤 ──
-    # is_pure_double = pattern_name in ["DoubleBottom", "DoubleTop"]
-    #
-    # if is_pure_double:
-    #     # 1. 获取 D 点 K 线（最新枢纽点）的高低点
-    #     # d_bar_idx 是 ZigZag 确定的 D 点索引
-    #     d_high = float(df["high"].iloc[d_bar_idx])
-    #     d_low = float(df["low"].iloc[d_bar_idx])
-    #
-    #     # 2. 计算 50% 的位置作为 Entry
-    #     entry_at_50 = (d_high + d_low) / 2
-    #
-    #     # 3. 强制覆盖 entry_win 逻辑：不检查回踩，直接设为 D 点 K 线的一半位置触发
-    #     entry_win = {
-    #         "triggered": True,
-    #         "entry_price": round(entry_at_50, 2),
-    #         "trigger_bar": d_bar_idx,
-    #         "d_range": round(d_high - d_low, 2)
-    #     }
-    # else:
-    # 如果是普通谐波形态（Bat, Butterfly 等），保留你原来的回踩入场逻辑
-    # 提取C点价格（confirmed_prices[-5:] = [X,A,B,C,D]，C = [-2]）
-    c_price_for_entry = float(confirmed_prices[-2]) if len(confirmed_prices) >= 4 else None
-    cd_price_len = abs(c_price_for_entry - d_price) if c_price_for_entry is not None else 0.0
-    entry_win = check_entry_window(zigzag_df, d_bar_idx, is_bull,
-                                   entry_bars=HARMONIC_ENTRY_BARS + 1,
-                                   c_price=c_price_for_entry)
+        vol_confirmed = False
+        if "volume" in zigzag_df.columns and d_bar_idx < len(zigzag_df):
+            recent_vol = zigzag_df["volume"].iloc[-HARMONIC_SWEEP_BARS:].mean()
+            avg_vol_ref = zigzag_df["volume"].iloc[-30:-HARMONIC_SWEEP_BARS].mean() + 1e-10
+            vol_confirmed = bool(recent_vol > avg_vol_ref * 1.1)
 
-    # 统一检查是否准入
-    if not entry_win["triggered"]:
-        log_scan_skip(f"  [过滤-{timeframe}] {pattern_name} 入场窗口未触发")
-        return None
+        # ── 6. TD 计数与 PRZ 评分 ──
+        prz_score, prz_detail = score_prz_quality(confirmed_prices, pattern_name, HARMONIC_ERROR_PCT)
 
-    entry_price = entry_win["entry_price"]
+        td_result = {"found": False, "td_values": []}
+        has_td_in_db = False
+        # if has_double:
+        #     offset1 = db_result.get("bottom1_zz_offset", db_result.get("top1_zz_offset", -3))
+        #     offset2 = db_result.get("bottom2_zz_offset", db_result.get("top2_zz_offset", -1))
+        #     n_pts = len(indices)
+        #     idx1 = indices[n_pts + offset1] if n_pts + offset1 >= 0 else 0
+        #     idx2 = indices[n_pts + offset2] if n_pts + offset2 >= 0 else 0
+        #     td_result = check_td_between_bottoms(df, min(idx1, idx2), max(idx1, idx2))
+        #     has_td_in_db = td_result["found"]
 
-    # D→C 0.786 是计划入场价，不再作为谐波信号准入过滤。
-    # 旧逻辑用 0.236 时这个距离过滤还能成立；改成 0.786 后会误杀 30m/1h 信号。
+        # 综合 SMC 评分
+        smc_score = (int(has_sweep) + int(len(ob_match) > 0) + int(has_fvg)
+                     + int(has_choch) + int(vol_confirmed))
+        # if has_double:   smc_score += 1
+        # if has_td_in_db: smc_score += 1
 
-    # ── 5. SMC 确认项与评分 ──
-    has_sweep = check_sweep_at_d(zigzag_df, d_price, is_bull, atr, n=HARMONIC_SWEEP_BARS)
-    obs = find_obs_near_d(zigzag_df, d_price, atr)
-    ob_match = [o for o in obs if o["type"] == ("bullish" if is_bull else "bearish")]
-    has_fvg = check_fvg_after_d(zigzag_df, d_bar_idx, is_bull)
-    has_choch = check_choch_at_d(zigzag_df, d_bar_idx, is_bull, lookback=8)
+        #初期不需要 放开所有限制
+        # if smc_score < (1 if has_choch else 2): return None
 
-    vol_confirmed = False
-    if "volume" in zigzag_df.columns and d_bar_idx < len(zigzag_df):
-        recent_vol = zigzag_df["volume"].iloc[-HARMONIC_SWEEP_BARS:].mean()
-        avg_vol_ref = zigzag_df["volume"].iloc[-30:-HARMONIC_SWEEP_BARS].mean() + 1e-10
-        vol_confirmed = bool(recent_vol > avg_vol_ref * 1.1)
+        # ── 7. 谐波 TP 与反推 SL ───────────────────────────────────────
+        # 所有 TP 统一按 C -> D 轴计算：
+        # - D = 0
+        # - C = 1
+        tp1 = d_price + (c_price_for_entry - d_price) * HARMONIC_TP1_CD_RATIO
+        tp2 = d_price + (c_price_for_entry - d_price) * HARMONIC_TP2_CD_RATIO
 
-    # ── 6. TD 计数与 PRZ 评分 ──
-    prz_score, prz_detail = score_prz_quality(confirmed_prices, pattern_name, HARMONIC_ERROR_PCT)
+        stop_rr = max(HARMONIC_STOP_RR, 0.1)
+        risk_amt = abs(tp1 - entry_price) / stop_rr
+        sl_by_rr = entry_price - risk_amt if is_bull else entry_price + risk_amt
 
-    td_result = {"found": False, "td_values": []}
-    has_td_in_db = False
-    # if has_double:
-    #     offset1 = db_result.get("bottom1_zz_offset", db_result.get("top1_zz_offset", -3))
-    #     offset2 = db_result.get("bottom2_zz_offset", db_result.get("top2_zz_offset", -1))
-    #     n_pts = len(indices)
-    #     idx1 = indices[n_pts + offset1] if n_pts + offset1 >= 0 else 0
-    #     idx2 = indices[n_pts + offset2] if n_pts + offset2 >= 0 else 0
-    #     td_result = check_td_between_bottoms(df, min(idx1, idx2), max(idx1, idx2))
-    #     has_td_in_db = td_result["found"]
+        d_low = float(entry_win.get("d_low", zigzag_df["low"].iloc[d_bar_idx]))
+        d_high = float(entry_win.get("d_high", zigzag_df["high"].iloc[d_bar_idx]))
+        sl_by_d = d_low * (1.0 - HARMONIC_SL_BUFFER) if is_bull else d_high * (1.0 + HARMONIC_SL_BUFFER)
 
-    # 综合 SMC 评分
-    smc_score = (int(has_sweep) + int(len(ob_match) > 0) + int(has_fvg)
-                 + int(has_choch) + int(vol_confirmed))
-    # if has_double:   smc_score += 1
-    # if has_td_in_db: smc_score += 1
+        tp1_half_risk = abs(tp1 - entry_price) * max(HARMONIC_TP1_STOP_FRAC, 0.01)
+        sl_by_tp1_half = entry_price - tp1_half_risk if is_bull else entry_price + tp1_half_risk
 
-    #初期不需要 放开所有限制
-    # if smc_score < (1 if has_choch else 2): return None
+        # 取更紧的止损：
+        # 多单止损越高越紧，空单止损越低越紧
+        if is_bull:
+            sl = max(sl_by_d, sl_by_tp1_half)
+        else:
+            sl = min(sl_by_d, sl_by_tp1_half)
 
-    # ── 7. 谐波 TP 与反推 SL ───────────────────────────────────────
-    # 所有 TP 统一按 C -> D 轴计算：
-    # - D = 0
-    # - C = 1
-    tp1 = d_price + (c_price_for_entry - d_price) * HARMONIC_TP1_CD_RATIO
-    tp2 = d_price + (c_price_for_entry - d_price) * HARMONIC_TP2_CD_RATIO
+        # 盈亏比
+        risk_amt = abs(entry_price - sl) + 1e-10
+        rr1 = round(abs(tp1 - entry_price) / risk_amt, 2)
+        rr2 = round(abs(tp2 - entry_price) / risk_amt, 2)
 
-    stop_rr = max(HARMONIC_STOP_RR, 0.1)
-    risk_amt = abs(tp1 - entry_price) / stop_rr
-    sl_by_rr = entry_price - risk_amt if is_bull else entry_price + risk_amt
+        # 最低 RR 门槛（RR=2 下保底，避免因 D点K线极大导致失效）
+        if rr1 < HARMONIC_MIN_RR:
+            log_scan_skip(
+                f"  [过滤-{timeframe}] {pattern_name} rr1={rr1} < HARMONIC_MIN_RR={HARMONIC_MIN_RR}"
+            )
+            return None
 
-    d_low = float(entry_win.get("d_low", zigzag_df["low"].iloc[d_bar_idx]))
-    d_high = float(entry_win.get("d_high", zigzag_df["high"].iloc[d_bar_idx]))
-    sl_by_d = d_low * (1.0 - HARMONIC_SL_BUFFER) if is_bull else d_high * (1.0 + HARMONIC_SL_BUFFER)
+        # ── 8. 构建最终结果 ──
+        conf_parts = []
+        if has_sweep:    conf_parts.append("Sweep✓")
+        if ob_match:     conf_parts.append(f"OB✓({len(ob_match)})")
+        if has_fvg:      conf_parts.append("FVG✓")
+        if has_choch:    conf_parts.append("CHoCH✓")
+        if vol_confirmed: conf_parts.append("Vol✓")
+        # if has_db:       conf_parts.append("DB✓")
+        # if has_dt:       conf_parts.append("DT✓")
+        if has_td_in_db: conf_parts.append(f"TD✓")
 
-    tp1_half_risk = abs(tp1 - entry_price) * max(HARMONIC_TP1_STOP_FRAC, 0.01)
-    sl_by_tp1_half = entry_price - tp1_half_risk if is_bull else entry_price + tp1_half_risk
+        grade_label = "A★★★" if smc_score >= 5 else ("B★★" if smc_score >= 3 else "C★")
 
-    # 取更紧的止损：
-    # 多单止损越高越紧，空单止损越低越紧
-    if is_bull:
-        sl = max(sl_by_d, sl_by_tp1_half)
-    else:
-        sl = min(sl_by_d, sl_by_tp1_half)
-
-    # 盈亏比
-    risk_amt = abs(entry_price - sl) + 1e-10
-    rr1 = round(abs(tp1 - entry_price) / risk_amt, 2)
-    rr2 = round(abs(tp2 - entry_price) / risk_amt, 2)
-
-    # 最低 RR 门槛（RR=2 下保底，避免因 D点K线极大导致失效）
-    if rr1 < HARMONIC_MIN_RR:
-        log_scan_skip(
-            f"  [过滤-{timeframe}] {pattern_name} rr1={rr1} < HARMONIC_MIN_RR={HARMONIC_MIN_RR}"
-        )
-        return None
-
-    # ── 8. 构建最终结果 ──
-    conf_parts = []
-    if has_sweep:    conf_parts.append("Sweep✓")
-    if ob_match:     conf_parts.append(f"OB✓({len(ob_match)})")
-    if has_fvg:      conf_parts.append("FVG✓")
-    if has_choch:    conf_parts.append("CHoCH✓")
-    if vol_confirmed: conf_parts.append("Vol✓")
-    # if has_db:       conf_parts.append("DB✓")
-    # if has_dt:       conf_parts.append("DT✓")
-    if has_td_in_db: conf_parts.append(f"TD✓")
-
-    grade_label = "A★★★" if smc_score >= 5 else ("B★★" if smc_score >= 3 else "C★")
-
-    return {
-        "timeframe": timeframe, "direction": "LONG" if is_bull else "SHORT",
-        "pattern": pattern_name, "grade": f"Harmonic-{pattern_name}-{grade_label}",
-        "pattern_family": pattern_family,
-        "entry": float(entry_price), "d_price": float(d_price), "stop_loss": float(sl),
-        "target1": tp1, "target2": tp2, "rr1": rr1, "rr2": rr2,
-        "zone": zone, "zone_pct": zone_pct, "smc_score": smc_score,
-        "prz_score": prz_score, "prz_detail": " | ".join(prz_detail),
-        "has_sweep": has_sweep, "has_ob": len(ob_match) > 0, "has_fvg": has_fvg,
-        "has_choch": has_choch, "vol_ok": vol_confirmed,
-        # "has_db": has_db, "has_dt": has_dt, "db_rrp": db_result.get("rrp", 0.0), "has_td_in_db": has_td_in_db,
-        # "td_values": td_result.get("td_values", []),
-        "confidence": f"SMC {smc_score}/7  PRZ {prz_score}/4 | {' '.join(conf_parts)}",
-        "conf_parts": conf_parts, "atr": float(atr), "price": float(current_price),
-        "entry_d_range": entry_win["d_range"], "trigger_bar": entry_win["trigger_bar"],
-        "multi_harmonic": bool(multi_xabcd.get("found")),
-        "multi_harmonic_detail": multi_xabcd,
-        "x_price": float(x_val) if x_val else None,
-        "a_price": float(a_val) if a_val else None,
-        "b_price": float(b_val) if b_val is not None else None,
-        "cd_len": entry_win.get("cd_len", 0),
-        "c_price": float(c_val if c_val is not None else c_price_for_entry)
-                   if (c_val is not None or c_price_for_entry is not None) else None,
-        "cd_price_len": float(cd_price_len),
-        "d_bar_time": str(zigzag_df["timestamp"].iloc[d_bar_idx]),
-        "require_pivot_confirmation": require_pivot_confirmation,
-        "raw_last5": [round(float(v), 8) for v in prices[-5:]],
-        "confirmed_last5": [round(float(v), 8) for v in confirmed_prices[-5:]],
-        "used_raw_latest_pivot": not require_pivot_confirmation,
-        "tp_anchor": "C→D",
-        "tp_ratio": HARMONIC_TP1_CD_RATIO,
-        "tp2_anchor": "C→D",
-        "tp2_ratio": HARMONIC_TP2_CD_RATIO,
-    }
+        return {
+            "timeframe": str(timeframe) + ", window:" + str(zz_length), "direction": "LONG" if is_bull else "SHORT",
+            "pattern": pattern_name, "grade": f"Harmonic-{pattern_name}-{grade_label}",
+            "pattern_family": pattern_family,
+            "entry": float(entry_price), "d_price": float(d_price), "stop_loss": float(sl),
+            "target1": tp1, "target2": tp2, "rr1": rr1, "rr2": rr2,
+            "zone": zone, "zone_pct": zone_pct, "smc_score": smc_score,
+            "prz_score": prz_score, "prz_detail": " | ".join(prz_detail),
+            "has_sweep": has_sweep, "has_ob": len(ob_match) > 0, "has_fvg": has_fvg,
+            "has_choch": has_choch, "vol_ok": vol_confirmed,
+            # "has_db": has_db, "has_dt": has_dt, "db_rrp": db_result.get("rrp", 0.0), "has_td_in_db": has_td_in_db,
+            # "td_values": td_result.get("td_values", []),
+            "confidence": f"SMC {smc_score}/7  PRZ {prz_score}/4 | {' '.join(conf_parts)}",
+            "conf_parts": conf_parts, "atr": float(atr), "price": float(current_price),
+            "entry_d_range": entry_win["d_range"], "trigger_bar": entry_win["trigger_bar"],
+            "multi_harmonic": bool(multi_xabcd.get("found")),
+            "multi_harmonic_detail": multi_xabcd,
+            "x_price": float(x_val) if x_val else None,
+            "a_price": float(a_val) if a_val else None,
+            "b_price": float(b_val) if b_val is not None else None,
+            "cd_len": entry_win.get("cd_len", 0),
+            "c_price": float(c_val if c_val is not None else c_price_for_entry)
+                       if (c_val is not None or c_price_for_entry is not None) else None,
+            "cd_price_len": float(cd_price_len),
+            "d_bar_time": str(zigzag_df["timestamp"].iloc[d_bar_idx]),
+            "require_pivot_confirmation": require_pivot_confirmation,
+            "raw_last5": [round(float(v), 8) for v in prices[-5:]],
+            "confirmed_last5": [round(float(v), 8) for v in confirmed_prices[-5:]],
+            "used_raw_latest_pivot": not require_pivot_confirmation,
+            "tp_anchor": "C→D",
+            "tp_ratio": HARMONIC_TP1_CD_RATIO,
+            "tp2_anchor": "C→D",
+            "tp2_ratio": HARMONIC_TP2_CD_RATIO,
+        }
 
 # ── 格式化输出 ────────────────────────────────────
 def format_signal(sig: dict) -> str:
