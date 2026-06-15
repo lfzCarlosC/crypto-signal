@@ -101,6 +101,15 @@ class Behaviour():
 
         if market_pairs:
             self.logger.info("Found configured markets: %s", market_pairs)
+            all_exchange_markets = self.exchange_interface.get_exchange_markets()
+            stock_market_pairs = []
+            if "bitget" in all_exchange_markets:
+                stock_market_pairs = [
+                    pair for pair in all_exchange_markets["bitget"].keys()
+                    if pair.endswith("ON/USDT")
+                ]
+            market_pairs = market_pairs + stock_market_pairs
+            self.logger.info("plus stock markets...")
         else:
             self.logger.info("No configured markets, using all available on exchange.")
 
@@ -109,7 +118,7 @@ class Behaviour():
             market_pairs = None
 
         market_data = self.exchange_interface.get_exchange_markets(markets = market_pairs)
-        
+
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
         exchange = list(market_data.keys())[0]
 
@@ -190,7 +199,7 @@ class Behaviour():
         if marketPairFlag == 'usd/btc':
             return  (( market_pair.lower().endswith("usdt") ) and
                      (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w']));
-    
+
     def postProcessPair(self, market_pair):
         if ':' in market_pair:
             return market_pair.split('/')[0] + '/' + market_pair.split(':')[-1]
@@ -288,10 +297,10 @@ class Behaviour():
         self.notifier.notify_dingtalk_message(
             self._format_harmonic_dingtalk_message(market_pair, harmonic_signal)
         )
-                
+
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
-        
+
         Args:
             market_data (dict): A dictionary containing the market data of the symbols to analyze.
             output_mode (str): Which console output mode to use.
@@ -318,7 +327,7 @@ class Behaviour():
 
                 if market_pair not in new_result[exchange]:
                     new_result[exchange][market_pair] = dict()
-                
+
                 """
                 set olhcv data
                 a bad implementation: this should be performed concurrently
@@ -359,7 +368,7 @@ class Behaviour():
                     macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macd'];  #white line
                     macd_signal = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdsignal']; #yellow line
                     delta_macd = new_result[exchange][market_pair]['indicators']['macd'][0]['result']['macdhist']; #macd volume
-                
+
                     # rsi = new_result[exchange][market_pair]['indicators']['rsi'][0]['result']['rsi'];
                     # stoch_slow_k = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_k'];
                     # stoch_slow_d = new_result[exchange][market_pair]['indicators']['stoch_rsi'][0]['result']['slow_d'];
@@ -466,14 +475,14 @@ class Behaviour():
                         # if(self.isOverceedingTriangleLine(peakLoc, ohlcv)):
                         #     self.printResult(new_result, exchange, market_pair, output_mode, "上升突破三角形",
                         #                      indicatorTypeCoinMap)
-                    
+
                         if (td8NegativeFlag):
                             self.notifier.notify_dingtalk(new_result, "TD8底部信号", market_pair)
-                            
+
 
                         if (td8PositiveFlag):
                            self.notifier.notify_dingtalk(new_result, "TD8顶部信号", market_pair)
-                    
+
                         if (td12NegativeFlag):
                            self.notifier.notify_dingtalk(new_result, "TD12底部信号", market_pair)
 
@@ -622,12 +631,12 @@ class Behaviour():
         n = len(high)
         pivots = [0] * n
         dir_arr = [0] * n
-        
+
         # 1. 计算pivots和dir（只看过去length个bar）
         for i in range(length, n - length):
             ph = high[i] == max(high[i-length:i+1])
             pl = low[i] == min(low[i-length:i+1])
-            
+
             if ph and not pl:
                 pivots[i] = 1
                 dir_arr[i] = 1
@@ -636,7 +645,7 @@ class Behaviour():
                 dir_arr[i] = -1
             else:
                 dir_arr[i] = dir_arr[i-1]  # 继承上一bar
-        
+
         zigzag_indices = []
         zigzag_prices = []
         zigzag_dirs = []
@@ -651,7 +660,7 @@ class Behaviour():
                 continue
             cur_dir = pivots[i]
             cur_price = high[i] if cur_dir == 1 else low[i]
-            
+
             if not zigzag_indices:
                 zigzag_indices.append(i)
                 zigzag_prices.append(cur_price)
@@ -660,9 +669,9 @@ class Behaviour():
                 last_price = cur_price
                 last_index = i
                 continue
-            
+
             dir_changed = (cur_dir != last_dir)
-            
+
             # 方向未变时，判断是否需要替换当前zigzag点
             if not dir_changed:
                 # 方向内点跳过逻辑：只有当前点价格突破之前线段高低时才替换
@@ -691,24 +700,24 @@ class Behaviour():
                 last_dir = cur_dir
                 last_price = cur_price
                 last_index = i
-            
+
             # 限制最大数组长度
             if len(zigzag_indices) > max_size:
                 zigzag_indices.pop(0)
                 zigzag_prices.pop(0)
                 zigzag_dirs.pop(0)
-        
+
         if not zigzag_indices:
             return [], [], [], []
-        
+
         # 3. 保证点顺序是升序
         zipped = sorted(zip(zigzag_indices, zigzag_prices, zigzag_dirs), key=lambda x: x[0])
         indices, prices, dirs = zip(*zipped)
-        
+
         # 4. 计算线段长度ratio：当前线段长度 / 上一线段长度
         def safe_ratio(a, b):
             return abs(b - a) / abs(a) if a != 0 else 0
-        
+
         ratios = []
         for i in range(1, len(prices)):
             ratio = round(safe_ratio(prices[i-1], prices[i]), 3)
@@ -716,14 +725,14 @@ class Behaviour():
 
         if indices[-1] < n - 10:
             return list([0]), list([0]), list([0]), []
-        
+
         return list(indices), list(prices), list(dirs), ratios
 
     def get_harmonic_ratios_from_prices(self, prices):
         if len(prices) < 5:
             return (0, 0, 0, 0)
-        
-        x, a, b, c, d = prices[-5:] 
+
+        x, a, b, c, d = prices[-5:]
         def safe_ratio(numer, denom):
             return abs(numer) / abs(denom) if abs(denom) > 1e-6 else 0
 
@@ -737,7 +746,7 @@ class Behaviour():
     def isCrabPattern(self, opened, close, low, high, indices, prices, ratios, error_percent=10):
         err_min = (100 - error_percent) / 100
         err_max = (100 + error_percent) / 100
-        
+
         if len(prices) < 5:
             return False
         xab, abc, bcd, xad = self.get_harmonic_ratios_from_prices(prices)
@@ -837,7 +846,7 @@ class Behaviour():
         # 获取zigzag点和方向
         if len(indices) < 4 or len(dirs) < 4:
             return None  # 不足4个点无法画
-        
+
         # 取倒数第2和第3段的线段
         x1 = indices[-3]
         y1 = prices[-3]
@@ -932,7 +941,7 @@ class Behaviour():
         return (line > volume) and (centerVolume < centerLine)
 
     #3k线判别
-    def isBottom3k(self, low, high):  
+    def isBottom3k(self, low, high):
         #low[0] > low[-1], low[-2] > low[-1], high[0] > high[-2]
         return (low[len(low)-1] > low[len(low)-2]) and (low[len(low)-3] > low[len(low)-2]) and (low[len(low)-1] > low[len(low)-3])
 
@@ -1299,7 +1308,7 @@ class Behaviour():
             delta_dmi[len(delta_dmi) - 2] > 0 and
             delta_dmi[len(delta_dmi) - 3] < 0)
 
-        or 
+        or
             (delta_dmi[len(delta_dmi) - 1] > 0 and
             delta_dmi[len(delta_dmi) - 2] > 0 and
             delta_dmi[len(delta_dmi) - 3] > 0 and
@@ -1375,16 +1384,16 @@ class Behaviour():
         for x in test_arr:
             if(x < 0 or (abs(x/min) >= 0.3)): #the rate of macd value divided by the megative highest macd value is less than 0.3
                 return False;
-            
+
         return True;
-        
+
     def lastNMinusDecreased(self, delta_macd, min):
         for i in range(len(delta_macd)):
             if(delta_macd[i] == min and i != 0):
                 return True;
             else:
                 return False;
-    
+
     def lastNMinusMacdVolume(self, delta_macd):
         result = []
         min = 0
@@ -1398,7 +1407,7 @@ class Behaviour():
             elif negativeStarted: #always return from here
                 return (result, min)
         return (result, min)
-    
+
     def _hasMinusBefore(self, arr, informant):
         n = len(arr)
         period = informant[0]["candle_period"]
@@ -1413,9 +1422,9 @@ class Behaviour():
                 if arr[index] <= 0:
                     return True;
             return False;
-        except Exception as e:         
+        except Exception as e:
             print("An exception occurred:" + str(e))
-    
+
     def _lis(self, arr):
         n = len(arr)
         m = [0]*n
@@ -1430,8 +1439,8 @@ class Behaviour():
                     result.append(arr[i])
                     max_value -= 1
         return result
-     
- 
+
+
     def _get_indicator_results(self, exchange, market_pair):
         """Execute the indicator analysis on a particular exchange and pair.
 
@@ -1465,7 +1474,7 @@ class Behaviour():
                         exchange,
                         candle_period
                     )
-                
+
                 if historical_data_cache[candle_period]:
                     analysis_args = {
                         'historical_data': historical_data_cache[candle_period],
@@ -1567,7 +1576,7 @@ class Behaviour():
                 if not crossover_conf['enabled']:
                     self.logger.debug("%s is disabled, skipping.", crossover)
                     continue
-                
+
                 key_indicator = new_result[crossover_conf['key_indicator_type']][crossover_conf['key_indicator']][crossover_conf['key_indicator_index']]
                 crossed_indicator = new_result[crossover_conf['crossed_indicator_type']][crossover_conf['crossed_indicator']][crossover_conf['crossed_indicator_index']]
 
