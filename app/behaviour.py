@@ -26,7 +26,8 @@ import os
 import sys
 
 import mysql.connector
-from datetime import date
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 class Behaviour():
     """Default analyzer which gives users basic trading information.
@@ -88,6 +89,98 @@ class Behaviour():
         output_interface = Output()
         self.output = output_interface.dispatcher
 
+    # ---------- 时间触发机制 ----------
+    SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
+    RUN_HOURS = {8, 14}  # 08:00 / 14:00 允许运行的小时点
+    TOLERANCE_MINUTES = 2  # 只允许在准点后 1 分钟内触发
+
+    def _is_within_tolerance(self, now, target_hour):
+        """判断 now 是否落在 target_hour:00 之后的 1 分钟容差窗口内（同一天）。"""
+        target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
+        delta = (now - target).total_seconds()
+        return 0 <= delta <= self.TOLERANCE_MINUTES * 60
+
+    def _get_redis_client(self):
+        return redis.Redis()
+
+    def _get_last_basepoint(self, redis_key):
+        """从 redis 读取上一个基点时间（ISO 字符串），不存在返回 None。"""
+        try:
+            r = self._get_redis_client()
+            raw = r.get(redis_key)
+            r.close()
+        except Exception:
+            self.logger.warn("Failed to read basepoint %s from redis, skipping run.", redis_key)
+            return None
+        if raw is None:
+            return None
+        return datetime.fromisoformat(raw.decode('utf-8'))
+
+    def _set_last_basepoint(self, redis_key, basepoint):
+        try:
+            r = self._get_redis_client()
+            r.set(redis_key, basepoint.isoformat())
+            r.close()
+        except Exception:
+            self.logger.warn("Failed to persist basepoint %s to redis.", redis_key)
+
+    def _is_time_to_run(self, candle_period):
+        """根据 candle_period 判断当前 Asia/Shanghai 时间是否允许运行。
+
+        规则:
+            12h: 每天 08:00 或 14:00（准点后 1 分钟内触发）
+            1d : 每天 08:00（准点后 1 分钟内触发）
+            3d : 以上一个基点为起点，每隔三天的 08:00 或 14:00（基点可为 08:00 或 14:00）
+            1w : 每周一 08:00（准点后 1 分钟内触发）
+            1M : 每月第一天的 08:00 或 14:00（准点后 1 分钟内触发）
+        其他 candle_period 不受时间门控限制，始终允许运行。
+
+        若 sys.argv 中包含 'IS_DEBUG'（系统参数之后追加），则跳过所有时间限制，始终允许运行，
+        用于测试模式。
+        """
+        if 'IS_DEBUG' in sys.argv:
+            self.logger.info("IS_DEBUG flag detected, skipping time gating.")
+            return True
+
+        now = datetime.now(self.SHANGHAI_TZ)
+
+        if candle_period == '12h':
+            return any(self._is_within_tolerance(now, h) for h in self.RUN_HOURS)
+
+        if candle_period == '1d':
+            return self._is_within_tolerance(now, 8)
+
+        if candle_period == '1w':
+            return now.weekday() == 0 and self._is_within_tolerance(now, 8)
+
+        if candle_period == '1M':
+            return now.day == 1 and any(self._is_within_tolerance(now, h) for h in self.RUN_HOURS)
+
+        if candle_period == '3d':
+            if not any(self._is_within_tolerance(now, h) for h in self.RUN_HOURS):
+                return False
+
+            redis_key = "behaviour:basepoint:3d"
+            last_basepoint = self._get_last_basepoint(redis_key)
+
+            current_slot = now.replace(
+                hour=8 if self._is_within_tolerance(now, 8) else 14,
+                minute=0, second=0, microsecond=0
+            )
+
+            if last_basepoint is None:
+                # 没有历史基点，本次运行作为新的基点
+                self._set_last_basepoint(redis_key, current_slot)
+                return True
+
+            days_elapsed = (current_slot.date() - last_basepoint.date()).days
+            if days_elapsed >= 3 and current_slot.hour == last_basepoint.hour:
+                self._set_last_basepoint(redis_key, current_slot)
+                return True
+            return False
+
+        # 未配置时间门控规则的周期，不做限制
+        return True
 
     def run(self, market_pairs, output_mode):
         """The analyzer entrypoint
@@ -98,6 +191,14 @@ class Behaviour():
         """
 
         self.logger.info("Starting default analyzer...")
+
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+        if not self._is_time_to_run(candle_period):
+            self.logger.info(
+                "Not within scheduled run window (Asia/Shanghai) for candle_period %s, skipping.",
+                candle_period
+            )
+            return
 
         if market_pairs:
             self.logger.info("Found configured markets: %s", market_pairs)
@@ -192,13 +293,12 @@ class Behaviour():
                 f.write("<p style='color: " + Behaviour.trendColor[indicator] + ";'>  币种/交易对:" + coin.replace('/','') + " " + indicator + '</p>\n' );
         f.close();
 
-    def detectCoinPairs(self, exchange, market_pair, marketPairFlag):
+    def detectCoinPairs(self, exchange, market_pair):
         if exchange == 'A股':
             return True;
 
-        if marketPairFlag == 'usd/btc':
-            return  (( market_pair.lower().endswith("usdt") ) and
-                     (self.indicator_conf['macd'][0]['candle_period'] in ['1h','6h', '4h', '12h', '1d', '3d', '1w']));
+        return  (( market_pair.lower().endswith("usdt") ) and
+                (self.indicator_conf['macd'][0]['candle_period'] in ['6h', '4h', '12h', '1d', '3d', '1w', '1M', '3M']));
 
     def postProcessPair(self, market_pair):
         if ':' in market_pair:
@@ -306,11 +406,6 @@ class Behaviour():
             output_mode (str): Which console output mode to use.
         """
 
-        if len(sys.argv) > 5:
-            marketPairFlag = sys.argv[5]
-        else:
-            marketPairFlag = 'usd/btc'
-
         indicatorModes = sys.argv[3]
         indicatorTypeCoinMap = defaultdict(list)
         new_result = dict()
@@ -322,7 +417,7 @@ class Behaviour():
             for market_pair in market_data[exchange]:
                 market_pair = self.postProcessPair(market_pair);
 
-                if not (self.detectCoinPairs(exchange, market_pair, marketPairFlag)):
+                if not (self.detectCoinPairs(exchange, market_pair)):
                     continue;
 
                 if market_pair not in new_result[exchange]:

@@ -91,10 +91,6 @@ for(( i=0;i<${#modes[@]};i++)); do
 #        python3 app/app.py  ${modes[i]}/poloniex_3d_${modes[i]}.yml ${modes[i]}/poloniex_3d.log ${modes[i]} -a &
 #        python3 app/app.py  ${modes[i]}/poloniex_w_${modes[i]}.yml ${modes[i]}/poloniex_w.log ${modes[i]} -a &
 
-#        python3 app/app.py  ${modes[i]}/huobi_4h_${modes[i]}.yml ${modes[i]}/huobi_4h.log ${modes[i]} -a &
-#        python3 app/app.py  ${modes[i]}/huobi_d_${modes[i]}.yml ${modes[i]}/huobi_d.log ${modes[i]} -a &
-#        python3 app/app.py  ${modes[i]}/huobi_w_${modes[i]}.yml ${modes[i]}/huobi_w.log ${modes[i]} -a &
-
        # nohup python3 app/app.py  ${modes[i]}/gate_d_custom.yml ${modes[i]}/gate_d.log ${modes[i]}  -a  > ${modes[i]}/system.out 2>&1 &
        # nohup python3 app/app.py  ${modes[i]}/gate_4h_${modes[i]}.yml ${modes[i]}/gate_4h.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
         #nohup python3 app/app.py  ${modes[i]}/gateio_6h_${modes[i]}.yml ${modes[i]}/gateio_6h.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
