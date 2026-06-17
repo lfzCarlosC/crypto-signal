@@ -8,6 +8,13 @@ exchanges:
   binance:
     required: {enabled: true}
 indicators:
+  cci:
+    - candle_period: 1M
+      cold: 0
+      enabled: true
+      timeperiod: 144
+      hot: 0
+      signal: [ cci ]
   adx:
   - alert_enabled: true
     alert_frequency: once
@@ -131,6 +138,26 @@ indicators:
     hot: 0
     cold: 0
 informants:
+  ema30:
+  - candle_period: 1M
+    enabled: true
+    period_count: 30
+    signal: [ ema ]
+  ema60:
+  - candle_period: 1M
+    enabled: true
+    period_count: 60
+    signal: [ ema ]
+  ema120:
+  - candle_period: 1M
+    enabled: true
+    period_count: 120
+    signal: [ ema ]
+  ema365:
+  - candle_period: 1M
+    enabled: true
+    period_count: 365
+    signal: [ ema ]
   bollinger_bands:
   - candle_period: 1M
     enabled: true
