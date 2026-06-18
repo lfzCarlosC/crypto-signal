@@ -294,9 +294,9 @@ class Notifier():
             exchange (str): 交易所(原始key，如 'binance')，用于邮件标题。
             candle_period (str): 本次扫描的candle_period(如 '1d'/'1w'/'1M'/'3d'/'12h')，用于邮件标题。
         """
-        # if not self.scan_all_signals:
-        #     self.logger.info("Scan all mode: no signals collected, skipping excel export & email.")
-        #     return
+        if not self.scan_all_signals:
+            self.logger.info("Scan all mode: no signals collected, skipping excel export & email.")
+            return
 
         try:
             filepath = self._write_scan_all_excel(self.scan_all_signals)

@@ -226,7 +226,7 @@ class Behaviour():
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
         exchange = list(market_data.keys())[0]
 
-        # (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
+        (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
 
         if scan_all_mode:
             # 全币种扫描模式：不推送钉钉，把已收集的信号写入excel并发送邮件
