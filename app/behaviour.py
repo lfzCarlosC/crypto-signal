@@ -214,7 +214,10 @@ class Behaviour():
         else:
             self.logger.info("No configured markets, using all available on exchange.")
 
-        if sys.argv[4:] and (sys.argv[4] == '-a'):
+        # -a 全币种扫描模式：该模式下不进行钉钉推送，所有信号改为收集后统一生成excel并邮件发送
+        scan_all_mode = bool(sys.argv[4:] and (sys.argv[4] == '-a'))
+
+        if scan_all_mode:
             self.logger.info("Scan all flag set to true. using all available on exchange.")
             market_pairs = None
 
@@ -223,7 +226,16 @@ class Behaviour():
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
         exchange = list(market_data.keys())[0]
 
-        (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
+        # (indicatorTypeCoinMap, new_result) = self._get_indicator_data(market_data, output_mode)
+
+        if scan_all_mode:
+            # 全币种扫描模式：不推送钉钉，把已收集的信号写入excel并发送邮件
+            self.notifier.export_scan_all_to_excel_and_email(
+                recipient='lfz.carlos@gmail.com',
+                exchange=exchange,
+                candle_period=candle_period
+            )
+
         if sys.argv[5:]:
             if (sys.argv[5] == '_get_indicator_data'):
                 return indicatorTypeCoinMap
@@ -394,8 +406,10 @@ class Behaviour():
         criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
         self.toDb(criteria_type, exchange, market_pair)
-        self.notifier.notify_dingtalk_message(
-            self._format_harmonic_dingtalk_message(market_pair, harmonic_signal)
+        self.notifier.notify_harmonic_dingtalk(
+            self._format_harmonic_dingtalk_message(market_pair, harmonic_signal),
+            market_pair=market_pair,
+            signal_type=criteria_type
         )
 
     def _apply_strategies(self, market_data, output_mode):
