@@ -73,7 +73,8 @@ for(( i=0;i<${#modes[@]};i++)); do
         nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]}  > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_M_${modes[i]}.yml ${modes[i]}/okex_M.log ${modes[i]} > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_3M_${modes[i]}.yml ${modes[i]}/okex_3M.log ${modes[i]} > ${modes[i]}/system.out 2>&1 &
-
+    fi
+    
     if [ "$runallcoins"  == "y" ]
     then
         nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
