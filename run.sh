@@ -24,7 +24,8 @@ cat /dev/null > d${modes[i]}.log
 cat /dev/null > w${modes[i]}.log
 
 read -p 'run level: (1h(30min/4h or 1M)' runlevel
-read -p 'run package(1d/3d/12h/1w) (all coin?): (y/n/all)' runpackage
+read -p 'run package(1d/3d/12h/1w): (y/n)' runpackage
+read -p 'run all coin? (y/n)' runallcoins
 
 #flush redis
 redis-cli FLUSHALL
@@ -73,22 +74,16 @@ for(( i=0;i<${#modes[@]};i++)); do
         nohup python3 app/app.py  ${modes[i]}/okex_M_${modes[i]}.yml ${modes[i]}/okex_M.log ${modes[i]} > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_3M_${modes[i]}.yml ${modes[i]}/okex_3M.log ${modes[i]} > ${modes[i]}/system.out 2>&1 &
 
-    if [ "$runpackage"  == "all" ]
+    if [ "$runallcoins"  == "y" ]
     then
-        nohup python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a > ${modes[i]}/system_binance_d.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_12h_${modes[i]}.yml ${modes[i]}/binance_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
 
-        nohup python3 app/app.py  ${modes[i]}/bitget_d_${modes[i]}.yml ${modes[i]}/bitget_d.log ${modes[i]} -a   > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/bitget_3d_${modes[i]}.yml ${modes[i]}/bitget_3d.log ${modes[i]} -a   > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/bitget_w_${modes[i]}.yml ${modes[i]}/bitget_w.log ${modes[i]} -a   > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/bitget_12h_${modes[i]}.yml ${modes[i]}/bitget_12h.log ${modes[i]}  -a  > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/bitget_M_${modes[i]}.yml ${modes[i]}/bitget_M.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
 
-        nohup python3 app/app.py  ${modes[i]}/okex_12h_${modes[i]}.yml ${modes[i]}/okex_12h.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_M_${modes[i]}.yml ${modes[i]}/okex_M.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_3M_${modes[i]}.yml ${modes[i]}/okex_3M.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
