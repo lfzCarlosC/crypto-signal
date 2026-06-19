@@ -342,7 +342,8 @@ class Behaviour():
         timeframe = {
             '4h': '4h',
             'd': '1d',
-            'w': '1w'
+            'w': '1w',
+            'M': '1M'
         }.get(candle_period, candle_period)
         return scan_harmonic_smc(self._prepare_harmonic_ohlcv(ohlcv), timeframe)
 
