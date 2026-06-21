@@ -91,14 +91,134 @@ class Behaviour():
 
     # ---------- 时间触发机制 ----------
     SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
-    RUN_HOURS = {8, 14}  # 08:00 / 14:00 允许运行的小时点
-    TOLERANCE_MINUTES = 2  # 只允许在准点后 1 分钟内触发
+    TOLERANCE_MINUTES = 2  # 只允许在准点后 2 分钟内触发
 
-    def _is_within_tolerance(self, now, target_hour):
-        """判断 now 是否落在 target_hour:00 之后的 1 分钟容差窗口内（同一天）。"""
-        target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
-        delta = (now - target).total_seconds()
-        return 0 <= delta <= self.TOLERANCE_MINUTES * 60
+    # 各 candle_period 对应的合法触发小时点（Asia/Shanghai，24小时制）。
+    # 不在此字典中的 candle_period 视为不受时间表调度，按 update_interval 轮询执行。
+    _HOUR_SLOTS = {
+        '1d': (8,),
+        '12h': (8, 20),
+        '1w': (8,),
+        '1M': (8,),
+        '3d': (8,),
+    }
+
+    def _matches_schedule(self, candidate, candle_period, last_basepoint=None):
+        """判断某个具体的小时整点 candidate 是否是 candle_period 的合法锚点。
+
+        只判断"点位"本身是否符合调度规则，不涉及容差判断（容差由调用方处理）。
+
+        Args:
+            candidate (datetime): 待判断的具体时间点（已对齐到整点，Asia/Shanghai）。
+            candle_period (str): 调度周期，如 '1d' / '12h' / '1w' / '1M' / '3d'。
+            last_basepoint (datetime|None): 仅 3d 周期使用，上一次的基点时间。
+
+        Returns:
+            bool: candidate 是否是该周期的合法锚点。
+        """
+        hours = self._HOUR_SLOTS.get(candle_period)
+        if hours is None or candidate.hour not in hours:
+            return False
+
+        if candle_period == '1w':
+            return candidate.weekday() == 0  # 周一
+
+        if candle_period == '1M':
+            return candidate.day == 1
+
+        if candle_period == '3d':
+            if last_basepoint is None:
+                # 还没有历史基点，任意一个 8 点都可以作为新的基点（首次运行）
+                return True
+            days_elapsed = (candidate.date() - last_basepoint.date()).days
+            return days_elapsed >= 3
+
+        return True  # 1d / 12h 没有额外限制
+
+    def _find_next_anchor(self, candle_period, now=None, search_days=60):
+        """查找 candle_period 对应的下一个应该触发 run() 的锚点时间。
+
+        不管程序何时被调用，都会从 now 开始按时间顺序扫描，找到：
+        - 一个仍落在 [anchor, anchor + 容差] 内的"当前"锚点 -> 应立即执行；
+        - 或者一个尚未到达的未来锚点 -> 应该睡到该时刻再执行。
+
+        该方法是只读的（3d 的历史基点只读取，不写入），可安全地被多次调用用于
+        计算"还需要睡多久"，真正写入新基点的动作放在 _is_time_to_run 里，
+        只在确定要执行的那一刻才提交。
+
+        Args:
+            candle_period (str): 调度周期。
+            now (datetime|None): 用于计算的当前时间，默认取 Asia/Shanghai 现在时刻。
+            search_days (int): 最多向未来搜索多少天（1M 最坏情况需要 31 天，给足余量）。
+
+        Returns:
+            tuple(datetime|None, bool):
+                (anchor, due_now)
+                - candle_period 不受调度限制 -> (None, False)
+                - 当前就该执行 -> (anchor, True)
+                - 需要等到未来某个时间点 -> (anchor, False)
+        """
+        if candle_period not in self._HOUR_SLOTS:
+            return None, False
+
+        if now is None:
+            now = datetime.now(self.SHANGHAI_TZ)
+
+        last_basepoint = None
+        if candle_period == '3d':
+            last_basepoint = self._get_last_basepoint("behaviour:basepoint:3d")
+
+        day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        hours = sorted(self._HOUR_SLOTS[candle_period])
+
+        for day_offset in range(search_days):
+            day = day0 + timedelta(days=day_offset)
+            for h in hours:
+                candidate = day.replace(hour=h)
+                if not self._matches_schedule(candidate, candle_period, last_basepoint):
+                    continue
+
+                delta = (now - candidate).total_seconds()
+                if delta < 0:
+                    # 这是未来的下一个锚点，睡到这个时间点
+                    return candidate, False
+                if delta <= self.TOLERANCE_MINUTES * 60:
+                    # 当前时刻就落在该锚点的容差窗口内，应立即执行
+                    return candidate, True
+                # delta 超出容差，说明这个锚点已经错过了，继续往后找
+
+        # search_days 足够大时理论上不会走到这里
+        return None, False
+
+    def seconds_until_next_run(self, default_interval):
+        """计算距离下一次应该调用 run() 还需要睡眠多少秒。
+
+        若当前 candle_period 受时间表调度（1d/12h/3d/1w/1M），精确计算到下一个合法
+        锚点的秒数（若当前已在容差窗口内则返回 0，表示立即执行）；否则回退到
+        default_interval（即原有的固定轮询间隔行为，用于不受时间表限制的 candle_period）。
+
+        Args:
+            default_interval (int): 不受时间表调度时使用的轮询间隔（秒）。
+
+        Returns:
+            float: 需要睡眠的秒数。
+        """
+        if 'IS_DEBUG' in sys.argv:
+            return 0
+
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+        anchor, due_now = self._find_next_anchor(candle_period)
+
+        if anchor is None:
+            return default_interval
+        if due_now:
+            return 0
+
+        now = datetime.now(self.SHANGHAI_TZ)
+        # 在锚点之后留几秒缓冲再唤醒，避免因为睡眠/调度精度误差导致提前几百毫秒
+        # 醒来时还落在锚点之前，从而被误判为"未到时间"。
+        wake_at = anchor + timedelta(seconds=5)
+        return max(0, (wake_at - now).total_seconds())
 
     def _get_redis_client(self):
         return redis.Redis()
@@ -127,59 +247,37 @@ class Behaviour():
     def _is_time_to_run(self, candle_period):
         """根据 candle_period 判断当前 Asia/Shanghai 时间是否允许运行。
 
-        规则:
-            12h: 每天 08:00 或 14:00（准点后 1 分钟内触发）
-            1d : 每天 08:00（准点后 1 分钟内触发）
-            3d : 以上一个基点为起点，每隔三天的 08:00 或 14:00（基点可为 08:00 或 14:00）
-            1w : 每周一 08:00（准点后 1 分钟内触发）
-            1M : 每月第一天的 08:00 或 14:00（准点后 1 分钟内触发）
+        规则（均为 Asia/Shanghai 时间，准点后 TOLERANCE_MINUTES 分钟内触发）:
+            1d : 每天 08:00
+            12h: 每天 08:00 或 20:00
+            3d : 以上一个基点为起点，每隔三天的 08:00
+            1w : 每周一 08:00
+            1M : 每月第一天的 08:00
         其他 candle_period 不受时间门控限制，始终允许运行。
 
-        若 sys.argv 中包含 'IS_DEBUG'（系统参数之后追加），则跳过所有时间限制，始终允许运行，
-        用于测试模式。
+        这是执行前的最终复核（实际睡眠时长由 seconds_until_next_run /
+        _find_next_anchor 精确计算得出，正常情况下调用到这里时一定恰好落在
+        容差窗口内）；3d 周期的新基点也是在这里、真正确认要执行的那一刻才写入。
+
+        若 sys.argv 中包含 'IS_DEBUG'，则跳过所有时间限制，始终允许运行，用于测试模式。
         """
         if 'IS_DEBUG' in sys.argv:
             self.logger.info("IS_DEBUG flag detected, skipping time gating.")
             return True
 
+        if candle_period not in self._HOUR_SLOTS:
+            # 未配置时间门控规则的周期，不做限制
+            return True
+
         now = datetime.now(self.SHANGHAI_TZ)
+        anchor, due_now = self._find_next_anchor(candle_period, now)
 
-        if candle_period == '12h':
-            return any(self._is_within_tolerance(now, h) for h in self.RUN_HOURS)
-
-        if candle_period == '1d':
-            return self._is_within_tolerance(now, 8)
-
-        if candle_period == '1w':
-            return now.weekday() == 0 and self._is_within_tolerance(now, 8)
-
-        if candle_period == '1M':
-            return now.day == 1 and any(self._is_within_tolerance(now, h) for h in self.RUN_HOURS)
-
-        if candle_period == '3d':
-            if not any(self._is_within_tolerance(now, h) for h in self.RUN_HOURS):
-                return False
-
-            redis_key = "behaviour:basepoint:3d"
-            last_basepoint = self._get_last_basepoint(redis_key)
-
-            current_slot = now.replace(
-                hour=8 if self._is_within_tolerance(now, 8) else 14,
-                minute=0, second=0, microsecond=0
-            )
-
-            if last_basepoint is None:
-                # 没有历史基点，本次运行作为新的基点
-                self._set_last_basepoint(redis_key, current_slot)
-                return True
-
-            days_elapsed = (current_slot.date() - last_basepoint.date()).days
-            if days_elapsed >= 3 and current_slot.hour == last_basepoint.hour:
-                self._set_last_basepoint(redis_key, current_slot)
-                return True
+        if not due_now:
             return False
 
-        # 未配置时间门控规则的周期，不做限制
+        if candle_period == '3d':
+            self._set_last_basepoint("behaviour:basepoint:3d", anchor)
+
         return True
 
     def run(self, market_pairs, output_mode):

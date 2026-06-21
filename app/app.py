@@ -39,9 +39,16 @@ def main():
     )
 
     while True:
+        # 不管程序何时启动/醒来，都精确计算到下一个调度锚点（如最近的早 8 点）
+        # 还需要睡多久；若当前已经落在容差窗口内，返回 0，立即执行。
+        sleep_seconds = behaviour.seconds_until_next_run(settings['update_interval'])
+        if sleep_seconds > 0:
+            logger.info(
+                "Sleeping for %s seconds until next scheduled run (Asia/Shanghai)",
+                sleep_seconds
+            )
+            time.sleep(sleep_seconds)
         behaviour.run(settings['market_pairs'], settings['output_mode'])
-        logger.info("Sleeping for %s seconds", settings['update_interval'])
-        time.sleep(settings['update_interval'])
 
 if __name__ == "__main__":
     try:
