@@ -77,17 +77,23 @@ for(( i=0;i<${#modes[@]};i++)); do
 
     if [ "$runallcoins"  == "y" ]
     then
-#        nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+      read -p 'need debug? (y/n) ' need_debug
+      if [ "$need_debug" == "y" ]; then
+        IS_DEBUG=" IS_DEBUG"  # 如果需要，这里可以改成你程序实际支持的参数格式，比如 " -d"
+      else
+        IS_DEBUG=""
+      fi
+#        nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
 
-#        nohup python3 app/app.py  ${modes[i]}/bitget_3d_${modes[i]}.yml ${modes[i]}/bitget_3d.log ${modes[i]} -a   > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/bitget_w_${modes[i]}.yml ${modes[i]}/bitget_w.log ${modes[i]} -a   > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/bitget_M_${modes[i]}.yml ${modes[i]}/bitget_M.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/bitget_3d_${modes[i]}.yml ${modes[i]}/bitget_3d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_w_${modes[i]}.yml ${modes[i]}/bitget_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/bitget_M_${modes[i]}.yml ${modes[i]}/bitget_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
 
-#        nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
-#        nohup python3 app/app.py  ${modes[i]}/okex_M_${modes[i]}.yml ${modes[i]}/okex_M.log ${modes[i]} -a  > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/okex_3M_${modes[i]}.yml ${modes[i]}/okex_3M.log ${modes[i]} -a > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/okex_M_${modes[i]}.yml ${modes[i]}/okex_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+        nohup python3 app/app.py  ${modes[i]}/okex_3M_${modes[i]}.yml ${modes[i]}/okex_3M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
     fi
     
 #Monthly
