@@ -1146,6 +1146,8 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
                 _cd = abs(_p[4] - _p[3])
                 if _bd > _xa * 2.0 or _cd > _xa * 2.0:
                     xabcd_result = None
+            else:
+                continue
 
         # db_result = detect_double_pattern(
         #     prices=prices,
@@ -1370,6 +1372,8 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
             "tp2_anchor": "C→D",
             "tp2_ratio": HARMONIC_TP2_CD_RATIO,
         }
+    return None
+
 
 # ── 格式化输出 ────────────────────────────────────
 def format_signal(sig: dict) -> str:
