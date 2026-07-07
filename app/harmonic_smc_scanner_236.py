@@ -39,6 +39,8 @@ import time
 import datetime
 import sys
 
+import utils
+
 try:
     import ccxt.async_support as ccxt_async
     import ccxt
@@ -1120,9 +1122,6 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         x_val = 0.0
         b_val = None
         c_val = None
-        x_idx_zz = 0
-        a_idx_zz = 0
-        c_idx_zz = int(confirmed_indices[-2])
 
         if len(confirmed_prices) >= 5:
             p5 = confirmed_prices[-5:]
@@ -1130,8 +1129,6 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
             a_val = float(p5[1])  # A点
             b_val = float(p5[2])
             c_val = float(p5[3])
-            x_idx_zz = int(confirmed_indices[-5])  # X点在df中的索引
-            a_idx_zz = int(confirmed_indices[-4])  # A点在df中的索引
 
             # ── 2. 核心检测：先判已确认的 XABCD 谐波 ──
             xabcd_result = detect_harmonic(
@@ -1160,7 +1157,6 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         #     target_idx = db_result.get("d_bar_idx", len(df) - 1)
         # else:
         target_idx = len(zigzag_df) - 1
-
 
         pattern_name = None
         is_bull = False
@@ -1200,8 +1196,26 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
 
         d_price = float(confirmed_prices[-1])
         d_bar_idx = int(confirmed_indices[-1])
+        c_bar_idx = int(confirmed_indices[-2])
+        b_bar_idx = int(confirmed_indices[-3])
         pattern_family = "XABCD-family"
         latest_closed_idx = len(zigzag_df) - 1
+
+        #==================================signal filter=========================================
+        if utils.is_pattern_too_compressed(b_bar_idx, c_bar_idx, d_bar_idx):
+            continue
+
+        if d_bar_idx != latest_closed_idx:
+            continue
+
+        d_rsi = None
+        if is_bull:
+            rsi7 = utils.calc_rsi(zigzag_df["close"], period=7)
+            if 0 <= d_bar_idx < len(rsi7):
+                d_rsi = rsi7.iloc[d_bar_idx]
+            if pd.isna(d_rsi) or float(d_rsi) >= 40:
+                continue
+
         multi_xabcd = detect_multi_xabcd(
             confirmed_prices, confirmed_indices, HARMONIC_ERROR_PCT, latest_closed_idx
         ) if pattern_family == "XABCD-family" else {"found": False}
@@ -1212,7 +1226,7 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
                 f"当前价距D={abs(current_price - d_price):.2f} > ATR×3={atr * 3:.2f} "
                 f"price={current_price:.2f} D={d_price:.2f}"
             )
-            return None
+            continue;
 
         # ── 4. 入场窗口过滤 ──
         # is_pure_double = pattern_name in ["DoubleBottom", "DoubleTop"]
@@ -1245,7 +1259,7 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         # 统一检查是否准入
         if not entry_win["triggered"]:
             log_scan_skip(f"  [过滤-{timeframe}] {pattern_name} 入场窗口未触发")
-            return None
+            continue
 
         entry_price = entry_win["entry_price"]
 
