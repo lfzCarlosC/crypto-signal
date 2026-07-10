@@ -168,7 +168,7 @@ class Behaviour():
         if candle_period == '3d':
             last_basepoint = self._get_last_basepoint("behaviour:basepoint:3d")
 
-        day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        day0 = now.replace(hour=0, minute=10, second=0, microsecond=0)
         hours = sorted(self._HOUR_SLOTS[candle_period])
 
         for day_offset in range(search_days):
