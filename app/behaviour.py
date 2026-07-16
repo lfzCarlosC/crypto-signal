@@ -12,6 +12,7 @@ import ccxt
 from mysql.connector import pooling
 from tenacity import RetryError
 
+import utils
 from analysis import StrategyAnalyzer
 from outputs import Output
 from harmonic_smc_scanner_236 import scan_harmonic_smc
@@ -620,62 +621,9 @@ class Behaviour():
                         td = indicators['td'][0]['result']['td'];
                         (td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag) = self.tdDeteminator(td)
 
-                    ########################################## goldenMacdFork
-                    intersectionValueAndMin = [0, 0]
-
-                    goldenForkMacd = None
-                    # if not (len(macd) == 0 \
-                    #         or len(macd_signal) == 0 \
-                    #         or len(delta_macd) == 0):
-
-                      # goldenForkMacd = (
-                      #   (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 1, intersectionValueAndMin)) or
-                      #
-                      #   (delta_macd[len(delta_macd)-1] >= 0  and delta_macd[len(delta_macd)-2] >= 0 and delta_macd[len(delta_macd)-3] <= 0 and self.isTheIntersectionPointCloseToBePositive(macd, macd_signal, 2, intersectionValueAndMin))
-                      #
-                      # )
-
-                      # macdVolumeIncreasesSurprisingly = (delta_macd[len(delta_macd) - 1] >= 0) and (
-                      #           delta_macd[len(delta_macd) - 2] >= 0) and (delta_macd[len(delta_macd) - 1] >= (
-                      #           delta_macd[len(delta_macd) - 2] * 3))
-
-                    ############################################## goldenForkKdj
-                    # len_k = len(kt)
-                    # len_d = len(dt)
-                    # len_j = len(jt)
-                    # goldenForkKdj = (
-                    #     ((dt[len_d-2] >= kt[len_k-2]) and (kt[len_k-2] >= jt[len_j-2]))
-                    #     and
-                    #     ((dt[len_d-1] <= kt[len_k-1]) and (kt[len_k-1] <= jt[len_j-1]))
-                    # )
-
-                    ############################################# dmi
-                    # lastNDMIIsPositiveVolume = (self.lastNDataIsPositive(delta_di, 3) > 0) or (self.lastNDataIsPositive(delta_di, 2) > 0) or (self.lastNDataIsPositive(delta_di, 1) > 0)
-                    # lastNDIIsPositiveFork = self.lastNDMIIsPositive(delta_di, 5)
-                    # lastNDMIsPositiveFork = self.lastNDMIIsPositive(delta_dm, 5)
-
-                    ############################################# macdBottomDivergence
-                    # hasBottomDivergence = self.detectBottomDivergence(delta_macd, low, macd_signal)
-                    # hasPeakDivergence = self.detectPeakDivergence(delta_macd, high, macd_signal)
-                    # hasMultipleBottomDivergence = self.detectMultipleBottomDivergence(delta_macd, low, macd_signal)
-                    # hasMultiplePeakDivergnce = self.detectMultiplePeakDivergence(delta_macd, high, macd_signal)
-
-                    ############################################ macd正值平滑
-                    #c(macd+)>5 + D<0.1
-                    #counts: 10,
-                    # flatPositive = False
-                    # positiveFlag = self.lastNDataIsPositive(delta_macd, 10);
-                    # if(positiveFlag):
-                    #     variance, mean, max = self.getVariance(delta_macd, 10);
-                    #     flatPositive = self.lastNDataIsPositive(delta_macd, 10) and (variance <= 0.01) and (mean/max <= 0.2)
-
-                    #narrowedBoll
-                    #(narrowedBoll, test_arr) = self.lastNBoolIsNarrowed((upperband/lowerband)**10, 5) # counts of narrowed points
-                    #continuousKRise
-                    # lastNKPositive = self.lastNKIsPositive(distance_close_open)
-
-                    # isBottom3kFlag = self.isBottom3k(low, high)
-
+                    rsi7PositiveFlag = self.rsiPositive7(close)
+                    rsi14PositiveFlag = self.rsiPositive14(close)
+                    rsi28PositiveFlag = self.rsiPositive28(close)
 
 #=============================================signal rendering=============================================
                     if(indicatorModes == 'custom'):
@@ -719,94 +667,17 @@ class Behaviour():
                                 self.toDb("TD+底部2B信号", exchange, market_pair)
                                 self.notifier.notify_dingtalk(new_result, "TD+底部2B信号", market_pair)
 
-                        # if (goldenForkMacd and (intersectionValueAndMin[0] > 0)):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "0轴上macd金叉信号", indicatorTypeCoinMap)
-                        #     self.toDb("0轴上macd金叉信号", exchange, market_pair)
+                        if (rsi7PositiveFlag):
+                           self.toDb("rsi7 超卖区间", exchange, market_pair)
+                           self.notifier.notify_dingtalk(new_result, "rsi7 超卖区间", market_pair)
 
-                        # if (lastNDIIsPositiveFork or lastNDMIsPositiveFork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "DMI+", indicatorTypeCoinMap)
-                        #     self.toDb("DMI+", exchange, market_pair)
+                        if (rsi14PositiveFlag):
+                           self.toDb("rsi14 超卖区间", exchange, market_pair)
+                           self.notifier.notify_dingtalk(new_result, "rsi14 超卖区间", market_pair)
 
-
-
-                        # if (self.isBottomPinBar(low, high, close, opened)):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "底部pin bar", indicatorTypeCoinMap)
-                        #     self.toDb("底部pin bar", exchange, market_pair)
-
-                        # if (self.isTopPinBar(low, high, close, opened)):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "顶部pin bar", indicatorTypeCoinMap)
-                        #     self.toDb("顶部pin bar", exchange, market_pair)
-
-                        # if (flatPositive):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd正值平滑", indicatorTypeCoinMap)
-#================================================
-
-
-                        # (start, end) = self.detectMacdSlots(delta_macd, 0, 'positive')
-                        # if (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[
-                        #     self.getIndexOfMacdValley(delta_macd, start, end)])):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "接近0轴的macd金叉信号",
-                        #                      indicatorTypeCoinMap)
-                        #     self.toDb("接近0轴的macd金叉信号", exchange, market_pair)
-
-                        # if ((lastNDIIsPositiveFork or lastNDMIsPositiveFork) and (goldenForkMacd and (intersectionValueAndMin[0] > 0.2 * 2 * delta_macd[self.getIndexOfMacdValley(delta_macd, start, end)]))):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号 + DMI",
-                        #                      indicatorTypeCoinMap)
-                        #     self.toDb("macd金叉信号 + DMI", exchange, market_pair)
-
-                        # if (
-                        #         ((close[len(close)-1] > opened[len(opened)-1]) and (high[len(high)-1] > ema60[len(ema60)-1]) and (low[len(low)-1] < ema60[len(ema60)-1])
-                        #         )
-                        # ):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema60",
-                        #                      indicatorTypeCoinMap)
-                        #     self.toDb("沾到ema60", exchange, market_pair)
-
-                        # if (
-                        #         ((low[len(low)-1] >= (1-0.03) * ema30[len(ema30)-1] and low[len(low)-1] <= (1+0.03) * ema30[len(ema30)-1])
-                        #         )
-                        # ):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "沾到ema30",
-                        #                      indicatorTypeCoinMap)
-                        #     self.toDb("沾到ema30", exchange, market_pair)
-#================================================
-                        # if (macdBottomDivergence and lastNDMIIsPositiveFork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + DMI", indicatorTypeCoinMap)
-
-                        # if (macdBottomDivergence and stochrsi_goldenfork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd底背离 + stochrsi强弱指标金叉", indicatorTypeCoinMap)
-
-                        # if (goldenForkKdj and goldenForkMacd):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + macd金叉信号", indicatorTypeCoinMap)
-
-                        # if (goldenForkMacd):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "macd金叉信号", indicatorTypeCoinMap)
-
-                        # if (goldenForkKdj):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号", indicatorTypeCoinMap)
-
-                        # if (goldenForkKdj and lastNDMIIsPositiveFork):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "kdj金叉信号 + DMI", indicatorTypeCoinMap)
-
-                        # compound indicator
-                        # if (hasBottomDivergence):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "段内底背离", indicatorTypeCoinMap)
-
-                        #if (hasPeakDivergence):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "段内顶背离", indicatorTypeCoinMap)
-
-                        # if (hasMultipleBottomDivergence):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空底背离", indicatorTypeCoinMap)
-
-                        #if (hasMultiplePeakDivergnce):
-                        #    self.printResult(new_result, exchange, market_pair, output_mode, "分立跳空顶背离", indicatorTypeCoinMap)
-
-                        # if (stochrsi_goldenfork and goldenForkKdj and lastNDMIIsPositiveVolume and (delta_macd[len(delta_macd)-1] > delta_macd[len(delta_macd)-2])):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + kdj金叉信号 + DMI+ + macd量能减小", indicatorTypeCoinMap)
-
-                        # if (stochrsi_goldenfork and macdIsDecreased):
-                        #     self.printResult(new_result, exchange, market_pair, output_mode, "stochrsi强弱指标金叉 + macd下跌量能减弱",
-                        #                      indicatorTypeCoinMap)
+                        if (rsi28PositiveFlag):
+                           self.toDb("rsi28 超卖区间", exchange, market_pair)
+                           self.notifier.notify_dingtalk(new_result, "rsi28 超卖区间", market_pair)
 
                         harmonic_signal = self._scan_harmonic_signal(ohlcv)
                         if harmonic_signal:
@@ -1171,6 +1042,22 @@ class Behaviour():
         # --indicator
         return (priceMatches2BPattern and volumeMatches2BPattern) \
                or (priceMatches2BPatternMinusOne and volumeMatches2BPatternMinusOne)
+
+    def rsiPositive7(self, close):
+        rsi = utils.calc_rsi(close, 7)
+
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+        if candle_period == '1M':
+            return rsi.iloc[-1] < 32;
+        return False;
+
+    def rsiPositive14(self, close):
+        rsi = utils.calc_rsi(close, 14)
+        return rsi.iloc[-1] < 31;
+
+    def rsiPositive28(self, close):
+        rsi = utils.calc_rsi(close, 28)
+        return rsi.iloc[-1] < 31;
 
     def tdDeteminator(self, td):
         td9PositiveFlag = False

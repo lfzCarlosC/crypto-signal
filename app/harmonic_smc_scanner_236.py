@@ -1208,14 +1208,6 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         if d_bar_idx != latest_closed_idx:
             continue
 
-        d_rsi = None
-        if is_bull:
-            rsi7 = utils.calc_rsi(zigzag_df["close"], period=7)
-            if 0 <= d_bar_idx < len(rsi7):
-                d_rsi = rsi7.iloc[d_bar_idx]
-            if pd.isna(d_rsi) or float(d_rsi) >= 40:
-                continue
-
         multi_xabcd = detect_multi_xabcd(
             confirmed_prices, confirmed_indices, HARMONIC_ERROR_PCT, latest_closed_idx
         ) if pattern_family == "XABCD-family" else {"found": False}
