@@ -84,16 +84,17 @@ for(( i=0;i<${#modes[@]};i++)); do
         IS_DEBUG=""
       fi
 
-        nohup python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
-        nohup python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/binance_d_${modes[i]}.yml ${modes[i]}/binance_d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/binance_3d_${modes[i]}.yml ${modes[i]}/binance_3d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/binance_w_${modes[i]}.yml ${modes[i]}/binance_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
+#        nohup python3 app/app.py  ${modes[i]}/binance_M_${modes[i]}.yml ${modes[i]}/binance_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
 
         nohup python3 app/app.py  ${modes[i]}/bitget_d_${modes[i]}.yml ${modes[i]}/bitget_d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/bitget_3d_${modes[i]}.yml ${modes[i]}/bitget_3d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/bitget_w_${modes[i]}.yml ${modes[i]}/bitget_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/bitget_M_${modes[i]}.yml ${modes[i]}/bitget_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
 
+        nohup python3 app/app.py  ${modes[i]}/okex_d_${modes[i]}.yml ${modes[i]}/okex_d.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_w_${modes[i]}.yml ${modes[i]}/okex_w.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_M_${modes[i]}.yml ${modes[i]}/okex_M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
         nohup python3 app/app.py  ${modes[i]}/okex_3M_${modes[i]}.yml ${modes[i]}/okex_3M.log ${modes[i]} -a $IS_DEBUG > ${modes[i]}/system.out 2>&1 &
