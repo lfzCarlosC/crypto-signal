@@ -52,6 +52,9 @@ class Notifier():
     utc_tz = timezone('UTC')
     webhook = 'https://oapi.dingtalk.com/robot/send?access_token=1c46cb23a6562a4325bea9cf4225b11209e4b2fc4edd7d07e2ef404e15a86f0b'
 
+    tg_bot_token = '8884820320:AAFaLpVba_1UGqbKFmOKezKRKa3W26qbX9o'
+    tg_chat_id = '-5300052146'  
+
     def __init__(self, notifier_config):
         """Initializes Notifier class
 
@@ -401,13 +404,24 @@ class Notifier():
         return result
 
     def dingtalk(self, msg, webhook):
-        headers = {'Content-Type': 'application/json; charset=utf-8'}
-        prefix = "ding "
-        msg += prefix
-        data = {'msgtype': 'text', 'text': {'content': msg}, 'at': {'atMobiles': [], 'isAtAll': False}}
-        post_data = json.dumps(data)
-        response = requests.post(webhook, headers=headers, data=post_data)
-        return response.text
+        # === 1. 已关闭钉钉发送（如需重新启用，取消下面 5 行注释即可） ===
+        # headers = {'Content-Type': 'application/json; charset=utf-8'}
+        # prefix = "ding "
+        # msg += prefix
+        # data = {'msgtype': 'text', 'text': {'content': msg}, 'at': {'atMobiles': [], 'isAtAll': False}}
+        # response = requests.post(webhook, headers=headers, data=json.dumps(data))
+
+        # === 2. 只发送给 Telegram ===
+        try:
+            tg_url = f"https://api.telegram.org/bot{self.tg_bot_token}/sendMessage"
+            tg_payload = {
+                'chat_id': self.tg_chat_id,
+                'text': msg
+            }
+            requests.post(tg_url, json=tg_payload, timeout=10)
+        except Exception as e:
+            self.logger.warn("Telegram 发送失败: %s", str(e))
+
 
     def notify_telegram(self, new_analysis):
         """Send a notification via the telegram notifier
