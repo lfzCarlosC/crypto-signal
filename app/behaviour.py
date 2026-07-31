@@ -306,7 +306,7 @@ class Behaviour():
             if "bitget" in all_exchange_markets:
                 stock_market_pairs = [
                     pair for pair in all_exchange_markets["bitget"].keys()
-                    if pair.endswith("ON/USDT")
+                    if pair.startwith("R") and pair.endswith("/USDT") # 这里合约:USDT不要，只要现货
                 ]
             market_pairs = market_pairs + stock_market_pairs
             self.logger.info("plus stock markets...")
