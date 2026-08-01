@@ -52,8 +52,8 @@ class Notifier():
     utc_tz = timezone('UTC')
     webhook = 'https://oapi.dingtalk.com/robot/send?access_token=1c46cb23a6562a4325bea9cf4225b11209e4b2fc4edd7d07e2ef404e15a86f0b'
 
-    tg_bot_token = '8884820320:AAFaLpVba_1UGqbKFmOKezKRKa3W26qbX9o'
-    tg_chat_id = '-5300052146'  
+    tg_bot_token = '8884820320:AAEd-UdZqjPh0FTrzdKJCBrPqP8STMS1Dog'
+    tg_chat_id = '-5300052146'
 
     def __init__(self, notifier_config):
         """Initializes Notifier class
@@ -418,9 +418,14 @@ class Notifier():
                 'chat_id': self.tg_chat_id,
                 'text': msg
             }
-            requests.post(tg_url, json=tg_payload, timeout=10)
+            response = requests.post(tg_url, json=tg_payload, timeout=10)
+
+            # 打印 HTTP 状态码和 Telegram 返回的具体错误 JSON
+            print(f"--> TG Status Code: {response.status_code}")
+            print(f"--> TG Response: {response.text}")
+
         except Exception as e:
-            self.logger.warn("Telegram 发送失败: %s", str(e))
+            print(f"--> TG Request Exception: {str(e)}")
 
 
     def notify_telegram(self, new_analysis):

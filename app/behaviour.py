@@ -303,11 +303,16 @@ class Behaviour():
             self.logger.info("Found configured markets: %s", market_pairs)
             all_exchange_markets = self.exchange_interface.get_exchange_markets()
             stock_market_pairs = []
-            if "bitget" in all_exchange_markets:
-                stock_market_pairs = [
-                    pair for pair in all_exchange_markets["bitget"].keys()
-                    if pair.startwith("R") and pair.endswith("/USDT") # 这里合约:USDT不要，只要现货
-                ]
+            # if "bitget" in all_exchange_markets:
+            #     stock_market_pairs = [
+            #         pair for pair in all_exchange_markets["bitget"].keys()
+            #         if pair.startswith("R") and pair.endswith("/USDT") # 这里合约:USDT不要，只要现货
+            #     ]
+            # if "binance" in all_exchange_markets:
+            #     stock_market_pairs = [
+            #         pair for pair in all_exchange_markets["binance"].keys()
+            #         if pair.endswith("B/USDT") # 这里合约:USDT不要，只要现货
+            #     ]
             market_pairs = market_pairs + stock_market_pairs
             self.logger.info("plus stock markets...")
         else:
