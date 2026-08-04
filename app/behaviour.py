@@ -94,6 +94,13 @@ class Behaviour():
     SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
     TOLERANCE_MINUTES = 2  # 只允许在准点后 2 分钟内触发
 
+    # 3d 周期的固定基准日期：经确认，交易所真实的 3d K线边界落在 2025-08-02 08:00
+    # (Asia/Shanghai)。用这个日期做基准，"距该日期相差天数 % 3 == 0" 的日子就是合法的
+    # 3d 锚点——这是个纯数学关系，跟这个基准日期本身同一网格上的任何日子都等价，
+    # 不依赖任何持久化状态（不再读写 Redis），所以程序不管什么时候启动/重启，
+    # 都能立刻算出正确的锚点，不会像原来那样把"重启的那一刻"误当成新基点。
+    THREE_DAY_REFERENCE_ANCHOR = date(2025, 8, 2)
+
     # 各 candle_period 对应的合法触发小时点（Asia/Shanghai，24小时制）。
     # 不在此字典中的 candle_period 视为不受时间表调度，按 update_interval 轮询执行。
     _HOUR_SLOTS = {
@@ -104,7 +111,7 @@ class Behaviour():
         '3d': (8,),
     }
 
-    def _matches_schedule(self, candidate, candle_period, last_basepoint=None):
+    def _matches_schedule(self, candidate, candle_period):
         """判断某个具体的小时整点 candidate 是否是 candle_period 的合法锚点。
 
         只判断"点位"本身是否符合调度规则，不涉及容差判断（容差由调用方处理）。
@@ -112,7 +119,6 @@ class Behaviour():
         Args:
             candidate (datetime): 待判断的具体时间点（已对齐到整点，Asia/Shanghai）。
             candle_period (str): 调度周期，如 '1d' / '12h' / '1w' / '1M' / '3d'。
-            last_basepoint (datetime|None): 仅 3d 周期使用，上一次的基点时间。
 
         Returns:
             bool: candidate 是否是该周期的合法锚点。
@@ -128,11 +134,9 @@ class Behaviour():
             return candidate.day == 1
 
         if candle_period == '3d':
-            if last_basepoint is None:
-                # 还没有历史基点，任意一个 8 点都可以作为新的基点（首次运行）
-                return True
-            days_elapsed = (candidate.date() - last_basepoint.date()).days
-            return days_elapsed >= 3
+            # 固定基准日期 + 模3判断，纯数学关系，不依赖任何历史状态
+            days_since_ref = (candidate.date() - self.THREE_DAY_REFERENCE_ANCHOR).days
+            return days_since_ref % 3 == 0
 
         return True  # 1d / 12h 没有额外限制
 
@@ -143,9 +147,8 @@ class Behaviour():
         - 一个仍落在 [anchor, anchor + 容差] 内的"当前"锚点 -> 应立即执行；
         - 或者一个尚未到达的未来锚点 -> 应该睡到该时刻再执行。
 
-        该方法是只读的（3d 的历史基点只读取，不写入），可安全地被多次调用用于
-        计算"还需要睡多久"，真正写入新基点的动作放在 _is_time_to_run 里，
-        只在确定要执行的那一刻才提交。
+        该方法现在是完全无状态的（不再读写任何持久化的 3d 基点），可安全地被多次调用、
+        随时调用，不管进程什么时候启动/重启，结果永远只取决于传入的 now。
 
         Args:
             candle_period (str): 调度周期。
@@ -165,10 +168,6 @@ class Behaviour():
         if now is None:
             now = datetime.now(self.SHANGHAI_TZ)
 
-        last_basepoint = None
-        if candle_period == '3d':
-            last_basepoint = self._get_last_basepoint("behaviour:basepoint:3d")
-
         day0 = now.replace(hour=0, minute=10, second=0, microsecond=0)
         hours = sorted(self._HOUR_SLOTS[candle_period])
 
@@ -176,7 +175,7 @@ class Behaviour():
             day = day0 + timedelta(days=day_offset)
             for h in hours:
                 candidate = day.replace(hour=h)
-                if not self._matches_schedule(candidate, candle_period, last_basepoint):
+                if not self._matches_schedule(candidate, candle_period):
                     continue
 
                 delta = (now - candidate).total_seconds()
@@ -221,44 +220,21 @@ class Behaviour():
         wake_at = anchor + timedelta(seconds=5)
         return max(0, (wake_at - now).total_seconds())
 
-    def _get_redis_client(self):
-        return redis.Redis()
-
-    def _get_last_basepoint(self, redis_key):
-        """从 redis 读取上一个基点时间（ISO 字符串），不存在返回 None。"""
-        try:
-            r = self._get_redis_client()
-            raw = r.get(redis_key)
-            r.close()
-        except Exception:
-            self.logger.warn("Failed to read basepoint %s from redis, skipping run.", redis_key)
-            return None
-        if raw is None:
-            return None
-        return datetime.fromisoformat(raw.decode('utf-8'))
-
-    def _set_last_basepoint(self, redis_key, basepoint):
-        try:
-            r = self._get_redis_client()
-            r.set(redis_key, basepoint.isoformat())
-            r.close()
-        except Exception:
-            self.logger.warn("Failed to persist basepoint %s to redis.", redis_key)
-
     def _is_time_to_run(self, candle_period):
         """根据 candle_period 判断当前 Asia/Shanghai 时间是否允许运行。
 
         规则（均为 Asia/Shanghai 时间，准点后 TOLERANCE_MINUTES 分钟内触发）:
             1d : 每天 08:00
             12h: 每天 08:00 或 20:00
-            3d : 以上一个基点为起点，每隔三天的 08:00
+            3d : 距 THREE_DAY_REFERENCE_ANCHOR 固定基准日期相差天数为3的倍数那天的 08:00
             1w : 每周一 08:00
             1M : 每月第一天的 08:00
         其他 candle_period 不受时间门控限制，始终允许运行。
 
         这是执行前的最终复核（实际睡眠时长由 seconds_until_next_run /
         _find_next_anchor 精确计算得出，正常情况下调用到这里时一定恰好落在
-        容差窗口内）；3d 周期的新基点也是在这里、真正确认要执行的那一刻才写入。
+        容差窗口内）。整套调度现在完全无状态，不管进程什么时候启动/重启都会
+        算出同样正确的结果，不需要在这里做任何"记录这一刻"的操作。
 
         若 sys.argv 中包含 'IS_DEBUG'，则跳过所有时间限制，始终允许运行，用于测试模式。
         """
@@ -273,13 +249,33 @@ class Behaviour():
         now = datetime.now(self.SHANGHAI_TZ)
         anchor, due_now = self._find_next_anchor(candle_period, now)
 
-        if not due_now:
-            return False
+        return bool(due_now)
 
-        if candle_period == '3d':
-            self._set_last_basepoint("behaviour:basepoint:3d", anchor)
+    def calibrate_schedule_on_startup(self):
+        """开机任务：启动时把 1d/3d/1w/1M 各级别"下一次该执行的时间"都算一遍并打日志。
 
-        return True
+        整套调度现在是无状态的纯函数（不再依赖任何持久化的历史基点），所以这个方法
+        本身不需要写入任何东西去"校准"——它存在的意义是在启动时把结果打印出来，
+        让你一眼确认程序这次启动后，各级别会在什么时间点接上、而不是把"重启的这一刻"
+        误当成新的调度起点（这正是之前 3d 出问题的原因）。
+
+        建议在进程启动、开始真正的调度循环之前调用一次。
+        """
+        self.logger.info("Calibrating schedule on startup (Asia/Shanghai) ...")
+        now = datetime.now(self.SHANGHAI_TZ)
+        for candle_period in ('1d', '3d', '1w', '1M'):
+            anchor, due_now = self._find_next_anchor(candle_period, now)
+            if anchor is None:
+                self.logger.info("  %s: not schedule-gated", candle_period)
+                continue
+            status = "due now" if due_now else "upcoming"
+            self.logger.info(
+                "  %s: next anchor=%s (%s), %.1f minutes from now",
+                candle_period,
+                anchor.isoformat(),
+                status,
+                (anchor - now).total_seconds() / 60,
+            )
 
     def run(self, market_pairs, output_mode):
         """The analyzer entrypoint
