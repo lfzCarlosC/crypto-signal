@@ -27,6 +27,7 @@ import os
 import sys
 
 import mysql.connector
+import sqlite3
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -110,6 +111,183 @@ class Behaviour():
         '1M': (8,),
         '3d': (8,),
     }
+
+    # sqlite库文件（跟 tg 查询脚本共用同一个文件，只放"信号记录"和"扫描打标"，
+    # 跟上面 MySQL 的 db_pool/td 表是两套独立存储，互不影响）。
+    SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "signals.sqlite3")
+    _td_bucket_column_migrated = False  # 类级标记：只尝试一次给 td 表加 bucket_key 列
+
+    def _init_sqlite(self):
+        """确保 sqlite 库和所需的表都存在（signals=信号明细，scan_tags=扫描打标记录）。
+        每次调用都会重新连接、执行 CREATE TABLE IF NOT EXISTS，开销很小，不需要额外
+        维护连接池。"""
+        conn = sqlite3.connect(self.SQLITE_DB_PATH)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS signals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                market_pair TEXT NOT NULL,
+                signal_type TEXT NOT NULL,
+                candle_period TEXT NOT NULL,
+                message TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_pair ON signals(market_pair, created_at)")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS scan_tags (
+                candle_period TEXT NOT NULL,
+                bucket_key TEXT NOT NULL,
+                scanned_at TEXT NOT NULL,
+                PRIMARY KEY (candle_period, bucket_key)
+            )
+        """)
+        conn.commit()
+        return conn
+
+    def _current_candle_bucket_key(self, candle_period, now=None):
+        """返回当前时刻在 candle_period 这个周期下，对应"这一根K线"的稳定标识字符串。
+        同一根K线内（不管这段时间被 run() 触发了多少次）应该得到相同的 bucket_key，
+        用它来判断"这一根K线的信号/扫描是否已经处理过"，取代原来固定"10天"窗口的
+        粗糙判断（对 1h/12h/1w/1M 这些不同周期来说，10天窗口要么太长要么太短，
+        都不准确）。
+
+        Args:
+            candle_period (str): 调度周期，如 '15min'/'1h'/'1d'/'1w'/'1M' 等。
+            now (datetime|None): 用于计算的时间，默认取 Asia/Shanghai 现在时刻。
+
+        Returns:
+            str: 该周期当前所在K线的标识字符串。
+        """
+        if now is None:
+            now = datetime.now(self.SHANGHAI_TZ)
+        if candle_period == '1M':
+            return now.strftime('%Y-%m')
+        if candle_period == '1w':
+            monday = (now - timedelta(days=now.weekday())).date()
+            return monday.isoformat()
+        if candle_period == '3d':
+            days_since_ref = (now.date() - self.THREE_DAY_REFERENCE_ANCHOR).days
+            bucket_index = days_since_ref // 3
+            return f"3d-{bucket_index}"
+        if candle_period == '1d':
+            return now.strftime('%Y-%m-%d')
+        if candle_period == '12h':
+            slot = 0 if now.hour < 12 else 1
+            return now.strftime('%Y-%m-%d') + f"-{slot}"
+        if candle_period == '6h':
+            return now.strftime('%Y-%m-%d') + f"-{now.hour // 6}"
+        if candle_period == '4h':
+            return now.strftime('%Y-%m-%d') + f"-{now.hour // 4}"
+        if candle_period == '1h':
+            return now.strftime('%Y-%m-%d-%H')
+        if candle_period == '30min':
+            return now.strftime('%Y-%m-%d-%H') + f"-{now.minute // 30}"
+        if candle_period == '15min':
+            return now.strftime('%Y-%m-%d-%H') + f"-{now.minute // 15}"
+        # 未知/未来新增的周期兜底：按小时分桶，避免完全没有dedup边界
+        return now.strftime('%Y-%m-%d-%H')
+
+    def _recent_bucket_keys(self, candle_period, count=3, now=None):
+        """返回 candle_period 从当前所在K线往前数 count 根（含当前）的 bucket_key
+        列表，按时间从早到晚排列。用于"核对过去N根K线是否都扫描过"这个巡检。
+        通过固定的时间步长往回退来枚举，不依赖任何历史状态。"""
+        if now is None:
+            now = datetime.now(self.SHANGHAI_TZ)
+        step_map = {
+            '1M': timedelta(days=31),   # 月用天数近似，靠 strftime('%Y-%m') 去重不会重复
+            '1w': timedelta(days=7),
+            '3d': timedelta(days=3),
+            '1d': timedelta(days=1),
+            '12h': timedelta(hours=12),
+            '6h': timedelta(hours=6),
+            '4h': timedelta(hours=4),
+            '1h': timedelta(hours=1),
+            '30min': timedelta(minutes=30),
+            '15min': timedelta(minutes=15),
+        }
+        step = step_map.get(candle_period, timedelta(hours=1))
+        keys = []
+        seen = set()
+        cursor = now
+        # 多退几步，避免月份等不等长周期用近似步长时漏掉/重复导致数量不够
+        for _ in range(count * 3):
+            key = self._current_candle_bucket_key(candle_period, cursor)
+            if key not in seen:
+                seen.add(key)
+                keys.append(key)
+            if len(keys) >= count:
+                break
+            cursor = cursor - step
+        keys.reverse()
+        return keys
+
+    def _mark_scan_done(self, candle_period, now=None):
+        """标记"当前这根K线，这个级别已经扫描过了"，写入 scan_tags 表。"""
+        try:
+            bucket_key = self._current_candle_bucket_key(candle_period, now)
+            conn = self._init_sqlite()
+            with conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO scan_tags(candle_period, bucket_key, scanned_at) "
+                    "VALUES (?, ?, ?)",
+                    (candle_period, bucket_key, datetime.now(self.SHANGHAI_TZ).isoformat()),
+                )
+            conn.close()
+        except Exception as e:
+            self.logger.warn("标记扫描完成失败 candle_period=%s: %s", candle_period, str(e))
+
+    def _reconcile_recent_scans(self, candle_period, market_pairs, output_mode):
+        """核对 candle_period 过去3根K线是否都有扫描记录（scan_tags）；
+        缺失的那几根，会（1）立即触发一次补扫（注意：补扫用的是"现在"能拿到的最新
+        行情数据，不是去精确重建那根缺失K线当时的历史快照——这套代码的指标计算
+        链路本身就是围绕"当前最新数据"设计的，不支持任意历史时间点重新计算，
+        这是本次实现的已知限制），并（2）通过 Telegram 发一条提醒，明确告知
+        "检测到过去3根K线里有缺失的扫描记录"，避免误以为是这次新产生的正常信号。
+
+        只有当前 candle_period 是列表中"最新"的那根本身也已经被扫描过（即本次
+        run() 正常跑完）时才会调用这个方法，避免拿"本次还没跑完"当成"缺失"。
+        """
+        try:
+            recent_keys = self._recent_bucket_keys(candle_period, count=3)
+            conn = self._init_sqlite()
+            try:
+                rows = conn.execute(
+                    "SELECT bucket_key FROM scan_tags WHERE candle_period=? AND bucket_key IN (%s)"
+                    % ",".join("?" * len(recent_keys)),
+                    [candle_period] + recent_keys,
+                ).fetchall()
+            finally:
+                conn.close()
+            scanned_keys = {row[0] for row in rows}
+            missing_keys = [k for k in recent_keys if k not in scanned_keys]
+        except Exception as e:
+            self.logger.warn("核对最近3根K线扫描记录失败 candle_period=%s: %s", candle_period, str(e))
+            return
+
+        if not missing_keys:
+            return
+
+        self.logger.warn(
+            "候选周期 %s 过去3根K线中有 %d 根缺失扫描记录: %s，触发补扫",
+            candle_period, len(missing_keys), missing_keys
+        )
+        alert_msg = (
+            "⚠️ 巡检提醒\n级别: " + str(candle_period) +
+            "\n检测到过去3根K线中有 " + str(len(missing_keys)) + " 根缺失扫描记录: " +
+            ", ".join(missing_keys) +
+            "\n已使用当前最新数据补扫一次（注意：不是精确重建缺失那一刻的历史数据）。"
+        )
+        try:
+            self.notifier.dingtalk(alert_msg, self.notifier.webhook)
+        except Exception as e:
+            self.logger.warn("发送巡检提醒失败: %s", str(e))
+
+        # 补扫：直接用现有 _apply_strategies 跑一遍最新数据（见上面注释里的已知限制）
+        try:
+            market_data = self.exchange_interface.get_exchange_markets(markets=market_pairs)
+            self._apply_strategies(market_data, output_mode)
+        except Exception as e:
+            self.logger.warn("补扫执行失败 candle_period=%s: %s", candle_period, str(e))
 
     def _matches_schedule(self, candidate, candle_period):
         """判断某个具体的小时整点 candidate 是否是 candle_period 的合法锚点。
@@ -346,6 +524,12 @@ class Behaviour():
         else:
             self._notify_strategies_data(indicatorTypeCoinMap, exchange, new_result)
 
+        # ── 扫描打标 + 巡检过去3根K线是否都扫描过 ──────────────────────────────
+        # 只在这次是"完整常规扫描"（走到这里，没有走上面 debug/scan_all 的提前
+        # return）时才打标+巡检，避免调试模式/全币种模式干扰这个标记。
+        self._mark_scan_done(candle_period)
+        self._reconcile_recent_scans(candle_period, market_pairs, output_mode)
+
     def truncateFile(self):
         f = open(sys.argv[2],'r+')
         f.truncate()
@@ -504,14 +688,14 @@ class Behaviour():
 
     def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal):
         criteria_prefix = "多谐波形态" if harmonic_signal.get('multi_harmonic') else "谐波形态"
-        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
+        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern')) + "-" + str(harmonic_signal.get('timeframe'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
-        self.toDb(criteria_type, exchange, market_pair)
-        self.notifier.notify_harmonic_dingtalk(
-            self._format_harmonic_dingtalk_message(market_pair, harmonic_signal),
-            market_pair=market_pair,
-            signal_type=criteria_type
-        )
+        if self.toDb(criteria_type, exchange, market_pair):
+            self.notifier.notify_harmonic_dingtalk(
+                self._format_harmonic_dingtalk_message(market_pair, harmonic_signal),
+                market_pair=market_pair,
+                signal_type=criteria_type
+            )
 
     def _apply_strategies(self, market_data, output_mode):
         """Test the strategies and perform notifications as required
@@ -634,51 +818,54 @@ class Behaviour():
                         #                      indicatorTypeCoinMap)
 
                         if (td8NegativeFlag):
-                            self.notifier.notify_dingtalk(new_result, "TD8底部信号", market_pair)
-
+                            if self.toDb("TD8底部信号", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "TD8底部信号", market_pair)
 
                         if (td8PositiveFlag):
-                           self.notifier.notify_dingtalk(new_result, "TD8顶部信号", market_pair)
+                            if self.toDb("TD8顶部信号", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "TD8顶部信号", market_pair)
 
                         if (td12NegativeFlag):
-                           self.notifier.notify_dingtalk(new_result, "TD12底部信号", market_pair)
+                            if self.toDb("TD12底部信号", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "TD12底部信号", market_pair)
 
                         if (td12PositiveFlag):
-                            self.notifier.notify_dingtalk(new_result,  "TD12顶部信号", market_pair)
+                            if self.toDb("TD12顶部信号", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result,  "TD12顶部信号", market_pair)
 
                         if (td9NegativeFlag):
-                            self.toDb("TD 底部 9位置", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "TD 底部 9位置", market_pair)
+                            if self.toDb("TD 底部 9位置", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "TD 底部 9位置", market_pair)
 
                         if (td13NegativeFlag):
-                            self.toDb("TD 底部 13位置", exchange, market_pair)
-                            self.notifier.notify_dingtalk(new_result, "TD 底部 13位置", market_pair)
+                            if self.toDb("TD 底部 13位置", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "TD 底部 13位置", market_pair)
 
                         if (td9PositiveFlag):
-                           self.toDb("TD 顶部 9位置", exchange, market_pair)
-                           self.notifier.notify_dingtalk(new_result,  "TD 顶部 9位置", market_pair)
+                            if self.toDb("TD 顶部 9位置", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result,  "TD 顶部 9位置", market_pair)
 
                         if (td13PositiveFlag):
-                           self.toDb("TD 顶部 13位置", exchange, market_pair)
-                           self.notifier.notify_dingtalk(new_result, "TD 顶部 13位置", market_pair)
+                            if self.toDb("TD 顶部 13位置", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "TD 顶部 13位置", market_pair)
 
                         if (td13NegativeFlag or td9NegativeFlag):
                             if (self.isBottom2B(volume, opened, close)):
-                                self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
-                                self.toDb("TD+底部2B信号", exchange, market_pair)
-                                self.notifier.notify_dingtalk(new_result, "TD+底部2B信号", market_pair)
+                                if self.toDb("TD+底部2B信号", exchange, market_pair):
+                                    self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
+                                    self.notifier.notify_dingtalk(new_result, "TD+底部2B信号", market_pair)
 
                         if (rsi7PositiveFlag):
-                           self.toDb("rsi7 超卖区间", exchange, market_pair)
-                           self.notifier.notify_dingtalk(new_result, "rsi7 超卖区间", market_pair)
+                            if self.toDb("rsi7 超卖区间", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "rsi7 超卖区间", market_pair)
 
                         if (rsi14PositiveFlag):
-                           self.toDb("rsi14 超卖区间", exchange, market_pair)
-                           self.notifier.notify_dingtalk(new_result, "rsi14 超卖区间", market_pair)
+                            if self.toDb("rsi14 超卖区间", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "rsi14 超卖区间", market_pair)
 
                         if (rsi28PositiveFlag):
-                           self.toDb("rsi28 超卖区间", exchange, market_pair)
-                           self.notifier.notify_dingtalk(new_result, "rsi28 超卖区间", market_pair)
+                            if self.toDb("rsi28 超卖区间", exchange, market_pair):
+                                self.notifier.notify_dingtalk(new_result, "rsi28 超卖区间", market_pair)
 
                         harmonic_signal = self._scan_harmonic_signal(ohlcv)
                         if harmonic_signal:
@@ -1452,25 +1639,85 @@ class Behaviour():
             )
 
     def toDb(self, td_name, exchange, market_pair):
-        # 1. 效率极高：不建新连接，直接从连接池里捞一个现成的可用连接
+        """记录一次信号命中，并返回这次是否是"新的"（之前没记录过）——调用方应该
+        只在返回 True 时才真正发送 Telegram 通知，避免同一根K线内重复触发的信号
+        被反复推送（这是之前"定时扫描重复发消息"的根因：原来这里的 SQL 只是把
+        记录写进 MySQL 的 td 表，返回值从来没被调用方检查过，notify_dingtalk 永远
+        会无条件执行）。
+
+        去重维度从"固定10天窗口"改成"当前这根K线"（同一个 candle_period 下的
+        bucket_key，见 _current_candle_bucket_key()）：同一根K线内命中同一个信号
+        只会通知一次；等下一根新K线，只要信号仍然成立，会被当作新的一次通知。
+
+        命中的信号除了写MySQL(td表，历史行为不变，仍然可用于任何依赖这张表的
+        下游查询)，也会额外写进 sqlite 的 signals 表（见 _record_signal_sqlite()），
+        供 /symbol 查询命令使用。
+
+        Returns:
+            bool: True=这是一条新信号（之前没通知过，调用方应该发送通知）；
+                  False=重复信号（这根K线已经通知过了，调用方应该跳过通知）。
+        """
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+        bucket_key = self._current_candle_bucket_key(candle_period)
+        market_pair_name = self.exchange_interface.get_name_by_market_pair(market_pair)
+
+        # 懒迁移：给已存在的 td 表补一列 bucket_key（如果还没有的话）。用类级标记
+        # 保证一个进程生命周期内只尝试一次，避免每次调用都发一条 ALTER TABLE。
+        if not Behaviour._td_bucket_column_migrated:
+            try:
+                mydb = self.db_pool.get_connection()
+                try:
+                    with mydb.cursor() as cursor:
+                        cursor.execute("ALTER TABLE td ADD COLUMN bucket_key VARCHAR(64) NULL")
+                        mydb.commit()
+                except mysql.connector.Error:
+                    # 列已存在或其它非致命错误，忽略即可（不影响后续逻辑）
+                    pass
+                finally:
+                    mydb.close()
+            except Exception as e:
+                self.logger.warn("尝试给 td 表添加 bucket_key 列失败（忽略继续）: %s", str(e))
+            Behaviour._td_bucket_column_migrated = True
+
+        is_new_signal = True
         mydb = self.db_pool.get_connection()
-
-        candle_period = self.indicator_conf['macd'][0]['candle_period'];
-        sql = "INSERT INTO td(td_name, market_pair, candle_period, exchange, create_date) " \
-              "select distinct %s,%s,%s,%s,%s from dual where not exists( select 1 from td " \
+        sql = "INSERT INTO td(td_name, market_pair, candle_period, exchange, bucket_key, create_date) " \
+              "select distinct %s,%s,%s,%s,%s,%s from dual where not exists( select 1 from td " \
               "where td_name = %s and market_pair = %s and candle_period = %s and exchange = %s " \
-              "and create_date >= date_sub(%s, interval 10 day) and create_date <= %s)"
-        val = (td_name, self.exchange_interface.get_name_by_market_pair(market_pair), candle_period, exchange, date.today(),
-               td_name, self.exchange_interface.get_name_by_market_pair(market_pair), candle_period, exchange, date.today(), date.today())
+              "and bucket_key = %s)"
+        val = (td_name, market_pair_name, candle_period, exchange, bucket_key, date.today(),
+               td_name, market_pair_name, candle_period, exchange, bucket_key)
 
-        # 2. 使用 with 自动管理 cursor 和 connection 的关闭
         try:
             with mydb.cursor() as cursor:
                 cursor.execute(sql, val)
                 mydb.commit()
-                print(cursor.rowcount, "记录插入成功。")  # 💡 注意：直接用当前的 cursor 即可
+                is_new_signal = cursor.rowcount > 0
+                print(cursor.rowcount, "记录插入成功。")
         finally:
-            mydb.close()  # 💡 确保连接一定会被释放回 MySQL
+            mydb.close()
+
+        if is_new_signal:
+            self._record_signal_sqlite(market_pair_name, td_name, candle_period, td_name)
+
+        return is_new_signal
+
+    def _record_signal_sqlite(self, market_pair, signal_type, candle_period, message):
+        """把一条已确认要通知的信号记录进 sqlite 的 signals 表，供 /symbol 查询命令
+        使用。只应该在 toDb() 判定为"新信号"时调用，避免重复信号也被记录进查询库。
+        """
+        try:
+            conn = self._init_sqlite()
+            with conn:
+                conn.execute(
+                    "INSERT INTO signals(market_pair, signal_type, candle_period, message, created_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (market_pair, signal_type, candle_period, message,
+                     datetime.now(self.SHANGHAI_TZ).isoformat()),
+                )
+            conn.close()
+        except Exception as e:
+            self.logger.warn("写入 signals sqlite 失败: %s", str(e))
 
 
     def lastNMacdsArePositive(self, delta_macd, macd, n):
