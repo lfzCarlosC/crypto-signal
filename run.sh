@@ -113,7 +113,7 @@ pkill -f "telegram_query_listener.py"
 # 等待 1 秒确保旧进程已彻底退出
 sleep 1
 # 2. 后台启动 Telegram 监听程序，并将日志追加输出到 telegram_listener.log
-nohup python3 app/telegram_query_listener.py >> telegram_listener.log 2>&1 &
+nohup python3 app/telegram_listener.py >> telegram_listener.log 2>&1 &
 
 echo "telegram_query_listener 已重启完毕！"
 
