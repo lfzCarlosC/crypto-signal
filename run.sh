@@ -107,6 +107,16 @@ for(( i=0;i<${#modes[@]};i++)); do
     fi
 done
 
+###telegram listener
+# 1. 杀死旧的 telegram_query_listener.py 进程 (如果不存在也不报错)
+pkill -f "telegram_query_listener.py"
+# 等待 1 秒确保旧进程已彻底退出
+sleep 1
+# 2. 后台启动 Telegram 监听程序，并将日志追加输出到 telegram_listener.log
+nohup python telegram_query_listener.py >> telegram_listener.log 2>&1 &
+
+echo "telegram_query_listener 已重启完毕！"
+
 python3 -m venv venv
 nohup /bin/sh -c ". venv/bin/activate; \
 pip3 install Werkzeug==2.0.3 mysqlclient; \
