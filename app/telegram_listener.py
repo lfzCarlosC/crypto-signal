@@ -29,14 +29,14 @@ import requests
 from notification import Notifier
 
 BOT_TOKEN = Notifier.tg_bot_token
-SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "signals.sqlite3")
+SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../signals.sqlite3")
 API_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}"
 POLL_TIMEOUT = 30  # Telegram长轮询超时(秒)，getUpdates会在这段时间内一直挂起等新消息
 RESULT_LIMIT = 5   # 每次查询返回的最大信号条数
 
 # 1. 确保使用绝对路径定位 sqlite 文件
 SQLITE_DB_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "app", "signals.sqlite3")
+    os.path.join(os.path.dirname(__file__), "signals.sqlite3")
 )
 
 
