@@ -104,8 +104,6 @@ def send_message(chat_id, text: str) -> None:
 
 
 def handle_update(update: dict) -> None:
-    """处理一条 Telegram getUpdates 返回的消息。只识别形如 "/币种"（比如
-    "/btcusdt"、"/BTCUSDT@某bot"）这类命令，其它消息一律忽略，不回复。"""
     message = update.get("message") or update.get("channel_post")
     if not message:
         return
@@ -116,17 +114,27 @@ def handle_update(update: dict) -> None:
     if not text.startswith("/") or chat_id is None:
         return
 
-    # "/btcusdt" 或 "/btcusdt@your_bot_name" -> 取"/"后面、"@"前面、第一个空格前
-    # 的那一段，当作要查询的币种代码。
-    body = text[1:].split("@", 1)[0].split()[0].strip() if text[1:].strip() else ""
+    # 1. 拆分参数
+    parts = text.split()
+    cmd_part = parts[0][1:].split("@", 1)[0].strip()
 
-    if body.lower() in ("start", "help", ""):
-        send_message(chat_id, "输入 /币种 查询该币种最近的信号，例如：/btcusdt")
+    if cmd_part.lower() in ("start", "help", ""):
+        send_message(chat_id, "输入 /币种 [条数] 查询信号，例如：\n/btcusdt\n/btcusdt 10")
         return
 
-    results = query_signals(body)
-    send_message(chat_id, format_reply(body, results))
+    # 2. 解析限制条数（默认 5 条）
+    limit = RESULT_LIMIT
+    if len(parts) > 1:
+        try:
+            parsed_limit = int(parts[1])
+            if parsed_limit > 0:
+                limit = parsed_limit
+        except ValueError:
+            pass
 
+    # 3. 传入 limit 参数查询
+    results = query_signals(cmd_part, limit=limit)
+    send_message(chat_id, format_reply(cmd_part, results))
 
 def main() -> None:
     print("[telegram_query_listener] 启动，开始长轮询 Telegram 消息 ...")
