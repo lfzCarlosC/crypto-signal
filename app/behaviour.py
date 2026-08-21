@@ -238,11 +238,11 @@ class Behaviour():
 
     def _reconcile_recent_scans(self, candle_period, market_pairs, output_mode):
         """核对 candle_period 过去3根K线是否都有扫描记录（scan_tags）；
-        缺失的那几根，会（1）立即触发一次补扫（注意：补扫用的是"现在"能拿到的最新
-        行情数据，不是去精确重建那根缺失K线当时的历史快照——这套代码的指标计算
-        链路本身就是围绕"当前最新数据"设计的，不支持任意历史时间点重新计算，
-        这是本次实现的已知限制），并（2）通过 Telegram 发一条提醒，明确告知
-        "检测到过去3根K线里有缺失的扫描记录"，避免误以为是这次新产生的正常信号。
+        缺失的那几根，会（1）打一条日志说明具体缺了哪几根K线，（2）立即触发一次
+        补扫（注意：补扫用的是"现在"能拿到的最新行情数据，不是去精确重建那根
+        缺失K线当时的历史快照——这套代码的指标计算链路本身就是围绕"当前最新数据"
+        设计的，不支持任意历史时间点重新计算，这是本次实现的已知限制）。
+        只打日志，不发 Telegram/钉钉提醒。
 
         只有当前 candle_period 是列表中"最新"的那根本身也已经被扫描过（即本次
         run() 正常跑完）时才会调用这个方法，避免拿"本次还没跑完"当成"缺失"。
@@ -271,16 +271,8 @@ class Behaviour():
             "候选周期 %s 过去3根K线中有 %d 根缺失扫描记录: %s，触发补扫",
             candle_period, len(missing_keys), missing_keys
         )
-        alert_msg = (
-            "⚠️ 巡检提醒\n级别: " + str(candle_period) +
-            "\n检测到过去3根K线中有 " + str(len(missing_keys)) + " 根缺失扫描记录: " +
-            ", ".join(missing_keys) +
-            "\n已使用当前最新数据补扫一次（注意：不是精确重建缺失那一刻的历史数据）。"
-        )
-        try:
-            self.notifier.dingtalk(alert_msg, self.notifier.webhook)
-        except Exception as e:
-            self.logger.warn("发送巡检提醒失败: %s", str(e))
+        # 巡检结果只打日志，不再发 Telegram 提醒（按要求去掉钉钉/TG通知这一步，
+        # 只留上面这行 self.logger.warn 记录即可）。
 
         # 补扫：直接用现有 _apply_strategies 跑一遍最新数据（见上面注释里的已知限制）
         try:
@@ -688,7 +680,7 @@ class Behaviour():
 
     def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal):
         criteria_prefix = "多谐波形态" if harmonic_signal.get('multi_harmonic') else "谐波形态"
-        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
+        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern')) + "-" + str(harmonic_signal.get('timeframe'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
         if self.toDb(criteria_type, exchange, market_pair):
             self.notifier.notify_harmonic_dingtalk(
