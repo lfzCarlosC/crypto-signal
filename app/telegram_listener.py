@@ -61,6 +61,8 @@ def query_signals(symbol: str, limit: int = RESULT_LIMIT) -> list[dict]:
         conn.close()
 
     matched = []
+    seen_keys = set()  # (signal_type, 日期) 去重用；rows已经按created_at DESC排好，
+                        # 同一天同一条信号只会保留最新（第一次遇到）的那一条。
     for market_pair, signal_type, candle_period, created_at in rows:
         if not market_pair:
             continue
@@ -69,6 +71,15 @@ def query_signals(symbol: str, limit: int = RESULT_LIMIT) -> list[dict]:
         pair_norm = "".join(e for e in str(market_pair) if e.isalnum()).upper()
 
         if symbol_norm in pair_norm or pair_norm in symbol_norm:
+            # ── 去重：按 (信号内容, 日期) 去重，日期只精确到"天"，不看具体时分秒 ──
+            # 同一天同一个 signal_type 反复命中（比如RSI超卖区间连续好几根K线都在
+            # 命中）只算一条，避免 /btcusdt 10 里全是同一个信号堆出来的重复条目。
+            day_part = str(created_at)[:10]  # created_at是ISO格式字符串，前10位就是"YYYY-MM-DD"
+            dedup_key = (signal_type, day_part)
+            if dedup_key in seen_keys:
+                continue
+            seen_keys.add(dedup_key)
+
             matched.append({
                 "market_pair": market_pair,
                 "signal_type": signal_type,
