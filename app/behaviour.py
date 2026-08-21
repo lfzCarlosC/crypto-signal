@@ -688,7 +688,7 @@ class Behaviour():
 
     def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal):
         criteria_prefix = "多谐波形态" if harmonic_signal.get('multi_harmonic') else "谐波形态"
-        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern')) + "-" + str(harmonic_signal.get('timeframe'))
+        criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
         if self.toDb(criteria_type, exchange, market_pair):
             self.notifier.notify_harmonic_dingtalk(
