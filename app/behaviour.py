@@ -486,6 +486,7 @@ class Behaviour():
 
         # -a 全币种扫描模式：该模式下不进行钉钉推送，所有信号改为收集后统一生成excel并邮件发送
         scan_all_mode = bool(sys.argv[4:] and (sys.argv[4] == '-a'))
+        self._scan_all_mode = scan_all_mode  # 供 detectCoinPairs 判断 BTC 结尾交易对的周期限制
 
         if scan_all_mode:
             self.logger.info("Scan all flag set to true. using all available on exchange.")
@@ -583,10 +584,21 @@ class Behaviour():
 
     def detectCoinPairs(self, exchange, market_pair):
         if exchange == 'A股':
-            return True;
+            return True
 
-        return  (( market_pair.lower().endswith("usdt") ) and
-                (self.indicator_conf['macd'][0]['candle_period'] in ['6h', '4h', '12h', '1d', '3d', '1w', '1M', '3M']));
+        candle_period = self.indicator_conf['macd'][0]['candle_period']
+
+        # BTC 计价对（以 BTC 结尾）：仅在 -a 全币种扫描模式下的 1w / 1M 周期才扫描
+        if market_pair.lower().endswith('btc'):
+            if not getattr(self, '_scan_all_mode', False):
+                return False
+            return candle_period in ('1w', '1M')
+
+        # USDT 计价对：保持原有逻辑
+        return (
+            market_pair.lower().endswith('usdt') and
+            candle_period in ('6h', '4h', '12h', '1d', '3d', '1w', '1M', '3M')
+        )
 
     def postProcessPair(self, market_pair):
         if ':' in market_pair:
