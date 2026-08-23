@@ -592,7 +592,7 @@ class Behaviour():
         if market_pair.lower().endswith('btc'):
             if not getattr(self, '_scan_all_mode', False):
                 return False
-            return candle_period in ('1w', '1M')
+            return candle_period in ('1w', '1M', '3M')
 
         # USDT 计价对：保持原有逻辑
         return (
