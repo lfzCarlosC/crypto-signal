@@ -467,7 +467,29 @@ class Behaviour():
 
         if market_pairs:
             self.logger.info("Found configured markets: %s", market_pairs)
-            all_exchange_markets = self.exchange_interface.get_exchange_markets()
+            all_exchange_markets = None
+            for _attempt in range(3):
+                try:
+                    all_exchange_markets = self.exchange_interface.get_exchange_markets()
+                    break
+                except Exception as _conn_err:
+                    _is_network = "NetworkError" in type(_conn_err).__name__ or "Network" in str(_conn_err)
+                    if _is_network and _attempt < 2:
+                        self.logger.warning("加载全市场连接失败，第%d次重试（10分钟后）: %s", _attempt + 1, _conn_err)
+                        time.sleep(600)
+                    else:
+                        _err_msg = (
+                            f"⚠️ [crypto-signal] 交易所连接失败（加载全市场，已重试3次）\n"
+                            f"错误：{type(_conn_err).__name__}: {_conn_err}"
+                        )
+                        self.logger.error(_err_msg)
+                        try:
+                            self.notifier.notify_harmonic_dingtalk(_err_msg, signal_type="系统告警")
+                        except Exception:
+                            pass
+                        return
+            if all_exchange_markets is None:
+                return
             stock_market_pairs = []
             # if "bitget" in all_exchange_markets:
             #     stock_market_pairs = [
@@ -492,7 +514,30 @@ class Behaviour():
             self.logger.info("Scan all flag set to true. using all available on exchange.")
             market_pairs = None
 
-        market_data = self.exchange_interface.get_exchange_markets(markets = market_pairs)
+        market_data = None
+        for _attempt in range(3):
+            try:
+                market_data = self.exchange_interface.get_exchange_markets(markets=market_pairs)
+                break
+            except Exception as _conn_err:
+                _is_network = "NetworkError" in type(_conn_err).__name__ or "Network" in str(_conn_err)
+                if _is_network and _attempt < 2:
+                    self.logger.warning("主扫描连接失败，第%d次重试（10分钟后）: %s", _attempt + 1, _conn_err)
+                    time.sleep(600)
+                else:
+                    _err_msg = (
+                        f"⚠️ [crypto-signal] 交易所连接失败（已重试3次）\n"
+                        f"candle_period={candle_period}\n"
+                        f"错误：{type(_conn_err).__name__}: {_conn_err}"
+                    )
+                    self.logger.error(_err_msg)
+                    try:
+                        self.notifier.notify_harmonic_dingtalk(_err_msg, signal_type="系统告警")
+                    except Exception:
+                        pass
+                    return
+        if market_data is None:
+            return
 
         self.logger.info("Using the following exchange(s): %s", list(market_data.keys()))
         exchange = list(market_data.keys())[0]
