@@ -739,7 +739,9 @@ class Behaviour():
         criteria_prefix = "多谐波形态" if harmonic_signal.get('multi_harmonic') else "谐波形态"
         criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern')) + "-" + str(harmonic_signal.get('timeframe'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
-        if self.toDb(criteria_type, exchange, market_pair):
+        # extra_key 加入 d_bar_time，确保不同 D 点时间的谐波不会被误判为同一信号重复
+        _d_bar_time = str(harmonic_signal.get('d_bar_time', ''))
+        if self.toDb(criteria_type, exchange, market_pair, extra_key=_d_bar_time):
             self.notifier.notify_harmonic_dingtalk(
                 self._format_harmonic_dingtalk_message(market_pair, harmonic_signal),
                 market_pair=market_pair,
@@ -855,6 +857,11 @@ class Behaviour():
                         td = indicators['td'][0]['result']['td'];
                         (td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag) = self.tdDeteminator(td)
 
+                    # TD 信号去重用当前K线的 bucket_key 作为 extra_key，
+                    # 防止下个月扫描时，上月已发过的 TD9 信号被当作新信号重复推送
+                    _candle_period_now = self.indicator_conf['macd'][0]['candle_period']
+                    _td_bar_key = self._current_candle_bucket_key(_candle_period_now)
+
                     rsi7PositiveFlag = self.rsiPositive7(close)
                     rsi14PositiveFlag = self.rsiPositive14(close)
                     rsi28PositiveFlag = self.rsiPositive28(close)
@@ -867,49 +874,49 @@ class Behaviour():
                         #                      indicatorTypeCoinMap)
 
                         if (td8NegativeFlag):
-                            if self.toDb("TD8底部信号", exchange, market_pair):
+                            if self.toDb("TD8底部信号", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "TD8底部信号", market_pair)
 
                         if (td8PositiveFlag):
-                            if self.toDb("TD8顶部信号", exchange, market_pair):
+                            if self.toDb("TD8顶部信号", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "TD8顶部信号", market_pair)
 
                         if (td12NegativeFlag):
-                            if self.toDb("TD12底部信号", exchange, market_pair):
+                            if self.toDb("TD12底部信号", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "TD12底部信号", market_pair)
 
                         if (td12PositiveFlag):
-                            if self.toDb("TD12顶部信号", exchange, market_pair):
+                            if self.toDb("TD12顶部信号", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result,  "TD12顶部信号", market_pair)
 
                         if (td9NegativeFlag):
-                            if self.toDb("TD 底部 9位置", exchange, market_pair):
+                            if self.toDb("TD 底部 9位置", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "TD 底部 9位置", market_pair)
 
                         if (td13NegativeFlag):
-                            if self.toDb("TD 底部 13位置", exchange, market_pair):
+                            if self.toDb("TD 底部 13位置", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "TD 底部 13位置", market_pair)
 
                         if (td9PositiveFlag):
-                            if self.toDb("TD 顶部 9位置", exchange, market_pair):
+                            if self.toDb("TD 顶部 9位置", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result,  "TD 顶部 9位置", market_pair)
 
                         if (td13PositiveFlag):
-                            if self.toDb("TD 顶部 13位置", exchange, market_pair):
+                            if self.toDb("TD 顶部 13位置", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "TD 顶部 13位置", market_pair)
 
                         if (td13NegativeFlag or td9NegativeFlag):
                             if (self.isBottom2B(volume, opened, close)):
-                                if self.toDb("TD+底部2B信号", exchange, market_pair):
+                                if self.toDb("TD+底部2B信号", exchange, market_pair, extra_key=_td_bar_key):
                                     self.printResult(new_result, exchange, market_pair, output_mode, "TD+底部2B信号", indicatorTypeCoinMap)
                                     self.notifier.notify_dingtalk(new_result, "TD+底部2B信号", market_pair)
 
                         if (rsi7PositiveFlag):
-                            if self.toDb("rsi7 超卖区间", exchange, market_pair):
+                            if self.toDb("rsi7 超卖区间", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "rsi7 超卖区间", market_pair)
 
                         if (rsi14PositiveFlag):
-                            if self.toDb("rsi14 超卖区间", exchange, market_pair):
+                            if self.toDb("rsi14 超卖区间", exchange, market_pair, extra_key=_td_bar_key):
                                 self.notifier.notify_dingtalk(new_result, "rsi14 超卖区间", market_pair)
 
                         if (rsi28PositiveFlag):
@@ -1687,7 +1694,7 @@ class Behaviour():
                                 end=''
             )
 
-    def toDb(self, td_name, exchange, market_pair):
+    def toDb(self, td_name, exchange, market_pair, extra_key=None):
         """记录一次信号命中，并返回这次是否是"新的"（之前没记录过）——调用方应该
         只在返回 True 时才真正发送 Telegram 通知，避免同一根K线内重复触发的信号
         被反复推送（这是之前"定时扫描重复发消息"的根因：原来这里的 SQL 只是把
@@ -1708,6 +1715,9 @@ class Behaviour():
         """
         candle_period = self.indicator_conf['macd'][0]['candle_period']
         bucket_key = self._current_candle_bucket_key(candle_period)
+        # extra_key: 附加去重维度（谐波传 d_bar_time，防止不同时间的同类信号被误判为重复）
+        if extra_key:
+            bucket_key = f"{bucket_key}|{extra_key}"
         market_pair_name = self.exchange_interface.get_name_by_market_pair(market_pair)
 
         # 懒迁移：给已存在的 td 表补一列 bucket_key（如果还没有的话）。用类级标记
