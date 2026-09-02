@@ -735,11 +735,18 @@ class Behaviour():
 
         return "\n".join(lines)
 
-    def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal):
+    def _emit_harmonic_signal(self, new_result, exchange, market_pair, output_mode, indicatorTypeCoinMap, harmonic_signal, ohlcv_len=None):
+        # 只处理 D 点落在最后一根已收盘 K 线上的谐波信号
+        # ohlcv 最后一根是未收盘的当前K线，倒数第二根(index = len-2)才是最新已收盘K线
+        d_bar_idx = harmonic_signal.get('d_bar_idx')
+        if ohlcv_len is not None and d_bar_idx is not None:
+            last_confirmed_idx = ohlcv_len - 2   # 最后一根已收盘K线的 index
+            if int(d_bar_idx) != last_confirmed_idx:
+                return   # D点不在最新确认K线，跳过
+
         criteria_prefix = "多谐波形态" if harmonic_signal.get('multi_harmonic') else "谐波形态"
         criteria_type = criteria_prefix + "-" + str(harmonic_signal.get('direction')) + "-" + str(harmonic_signal.get('pattern')) + "-" + str(harmonic_signal.get('timeframe'))
         self.printResult(new_result, exchange, market_pair, output_mode, criteria_type, indicatorTypeCoinMap)
-        # extra_key 加入 d_bar_time，确保不同 D 点时间的谐波不会被误判为同一信号重复
         _d_bar_time = str(harmonic_signal.get('d_bar_time', ''))
         if self.toDb(criteria_type, exchange, market_pair, extra_key=_d_bar_time):
             self.notifier.notify_harmonic_dingtalk(
@@ -931,7 +938,8 @@ class Behaviour():
                                 market_pair,
                                 output_mode,
                                 indicatorTypeCoinMap,
-                                harmonic_signal
+                                harmonic_signal,
+                                ohlcv_len=len(ohlcv)
                             )
 
                         # if (self.isThreeDrivesPattern(opened, close, low, high, indices, prices, ratios)):
@@ -1304,40 +1312,18 @@ class Behaviour():
         return rsi.iloc[-1] < 31;
 
     def tdDeteminator(self, td):
-        td9PositiveFlag = False
-        td9NegativeFlag = False
-        td13PositiveFlag = False
-        td13NegativeFlag = False
-        td8PositiveFlag = False
-        td8NegativeFlag = False
-        td12PositiveFlag = False
-        td12NegativeFlag = False
+        # 只看最后一根已收盘K线（iloc[-2]），iloc[-1]是当前未收盘K线不计入
+        last = td.iloc[-2]
+        td9PositiveFlag  = last in (9,  9.0)
+        td9NegativeFlag  = last in (-9, -9.0)
+        td13PositiveFlag = last in (13, 13.0)
+        td13NegativeFlag = last in (-13, -13.0)
+        td8PositiveFlag  = last in (8,  8.0)
+        td8NegativeFlag  = last in (-8, -8.0)
+        td12PositiveFlag = last in (12, 12.0)
+        td12NegativeFlag = last in (-12, -12.0)
 
-        if ((td.iloc[-1] in (8, 8.0)) or (td.iloc[-2] in (8, 8.0))):
-            td8PositiveFlag = True;
-
-        if ((td.iloc[-1] in (-8, -8.0)) or (td.iloc[-2] in (-8, -8.0))):
-            td8NegativeFlag = True
-
-        if ((td.iloc[-1] in (9, 9.0)) or (td.iloc[-2] in (9, 9.0))):
-            td9PositiveFlag = True
-
-        if ((td.iloc[-1] in (-9, -9.0)) or (td.iloc[-2] in (-9, -9.0))):
-            td9NegativeFlag = True
-
-        if ((td.iloc[-1] in (12, 12.0)) or (td.iloc[-2] in (12, 12.0))):
-            td12PositiveFlag = True
-
-        if ((td.iloc[-1] in (-12, -12.0)) or (td.iloc[-2] in (-12, -12.0))):
-            td12NegativeFlag = True
-
-        if ((td.iloc[-1] in (13, 13.0)) or (td.iloc[-2] in (13, 13.0))):
-            td13PositiveFlag = True
-
-        if ((td.iloc[-1] in (-13, -13.0)) or (td.iloc[-2] in (-13, -13.0))):
-            td13NegativeFlag = True
-
-        return td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag;
+        return td9PositiveFlag, td9NegativeFlag, td8PositiveFlag, td8NegativeFlag, td13PositiveFlag, td13NegativeFlag, td12PositiveFlag, td12NegativeFlag
 
     def isOverceedingTriangleLine(self, loc_ids, ohlcv):
         indexX1 = loc_ids[0]
