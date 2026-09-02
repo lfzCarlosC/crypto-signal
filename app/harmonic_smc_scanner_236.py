@@ -1114,8 +1114,8 @@ def scan_harmonic_smc(df: pd.DataFrame, timeframe: str,
         # 顺势模式：不需要这根确认K，直接使用最新已完成 D 点。
         confirmed_prices = prices
         confirmed_indices = indices
-        if len(confirmed_prices) < 5:
-            return None
+        if len(confirmed_prices) < 4:
+            continue;
 
         xabcd_result = None
         a_val = 0.0
