@@ -3,6 +3,7 @@
 Cryptal signal is a trend detecting tool for your crypto currency Technical Analysis (TA).
 
 Now because of finding a fairly valuable RT strategy/indicator, this repo will herlass stop updating. Sorry! 
+If you are interested and willing to collaborate(you agree the philosophy strategy based on indicators in this shit code!)
 
 Track all coins across man stream exchanges Bittrex, Bitfinex, Binance, Huobipro, Okex, kucoin, ZB and more!
 
