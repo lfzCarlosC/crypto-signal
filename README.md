@@ -1,6 +1,8 @@
 # Cryptal Ark v4.0
 
-Cryptal Ark is a trend detecting tool for your crypto currency Technical Analysis (TA).
+Cryptal signal is a trend detecting tool for your crypto currency Technical Analysis (TA).
+
+Now because of finding a fairly valuable RT strategy/indicator, this repo will herlass stop updating. Sorry! 
 
 Track all coins across man stream exchanges Bittrex, Bitfinex, Binance, Huobipro, Okex, kucoin, ZB and more!
 
@@ -83,7 +85,7 @@ There are a number of reasons why the information crypto-signal provides could b
 
 - tradingview will have more historical data and for some indicators this can make a [big difference](https://ta-lib.org/d_api/ta_setunstableperiod.html).
 
-- tradingview uses a rolling 15 minute timeframe which means that the data they are analyzing can be more recent than ours by a factor of minutes or hours depending on what candlestick timeframe you are using.
+- tradingview uses a vaible rolling timeframe window which means that the data they are analyzing can be more recent than ours by a factor of minutes or hours depending on what candlestick timeframe you are using.
 
 - tradingview may collect data in a way that means the timeperiods we have may not line up with theres, which can have an effect on the analysis. This seems unlikely to us, but stranger things have happened.
 
