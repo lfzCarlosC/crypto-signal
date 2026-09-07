@@ -633,16 +633,14 @@ class Behaviour():
 
         candle_period = self.indicator_conf['macd'][0]['candle_period']
 
-        # BTC 计价对（以 BTC 结尾）：仅在 -a 全币种扫描模式下的 1w / 1M 周期才扫描
+        # BTC 计价对（以 BTC 结尾）
         if market_pair.lower().endswith('btc'):
-            if not getattr(self, '_scan_all_mode', False):
-                return False
-            return candle_period in ('1w', '1M', '3M')
+            return candle_period in ('12h', '1d', '3d', '1w', '1M', '3M')
 
         # USDT 计价对：保持原有逻辑
         return (
             market_pair.lower().endswith('usdt') and
-            candle_period in ('6h', '4h', '12h', '1d', '3d', '1w', '1M', '3M')
+            candle_period in ('1h','6h', '4h', '12h', '1d', '3d', '1w', '1M', '3M')
         )
 
     def postProcessPair(self, market_pair):
